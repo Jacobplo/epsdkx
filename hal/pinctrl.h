@@ -1,15 +1,10 @@
-#ifndef STM32F1XX_AFIO_H
-#define STM32F1XX_AFIO_H
+#ifndef EPSDKX_PINCTRL_H
+#define EPSDKX_PINCTRL_H
 
-#include "stm32f103xb.h"
+#include "common/halstatus.h"
 
-static inline void afio_init(void) {
-  RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;
-}
+static inline hal_status_t pinctrl_init(void);
 
-static inline void afio_disable_jtag(void) {
-  AFIO->MAPR &= ~(AFIO_MAPR_SWJ_CFG);
-  AFIO->MAPR |= AFIO_MAPR_SWJ_CFG_JTAGDISABLE;
-}
+static inline hal_status_t pinctrl_disable_jtag(void);
 
 #endif
