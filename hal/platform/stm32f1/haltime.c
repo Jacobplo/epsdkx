@@ -2,7 +2,7 @@
 
 static volatile uint32_t s_ticks;
 
-void SysTick_Handler(void) {
+static void SysTick_Handler(void) {
   s_ticks++;
 }
 
