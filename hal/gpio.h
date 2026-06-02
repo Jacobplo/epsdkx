@@ -1,5 +1,4 @@
 #ifndef EPSDKX_GPIO_H
-
 #define EPSDKX_GPIO_H
 
 #include <stdint.h>
@@ -9,9 +8,9 @@
 typedef union {
   struct {
     uint8_t port;
-    uint8_t pin_num;
-  };
-  uint16_t pin_num_full;
+    uint8_t pin;
+  } port_pin;
+  uint16_t pin_id;
 } gpio_pin_t;
 
 // GPIO pin mode
@@ -39,17 +38,17 @@ typedef enum {
 // GPIO State
 typedef enum {
   GPIO_LOW = 0,
-  GPIO_HIGH
+  GPIO_HIGH = 1
 } gpio_state_t;
 
-static inline hal_status_t gpio_init(void);
+hal_status_t gpio_init(void);
 
-static inline hal_status_t gpio_configure(gpio_pin_t pin, gpio_mode_t mode, gpio_configuration_t configuration);
+hal_status_t gpio_configure(gpio_pin_t pin, gpio_mode_t mode, gpio_configuration_t configuration);
 
-static inline hal_status_t gpio_write(gpio_pin_t pin, gpio_state_t state);
+hal_status_t gpio_write(gpio_pin_t pin, gpio_state_t state);
 
-static inline hal_status_t gpio_read(gpio_state_t *ret, gpio_pin_t pin);
+hal_status_t gpio_read(gpio_pin_t pin, gpio_state_t *ret_state);
 
-static inline hal_status_t gpio_toggle(gpio_pin_t pin);
+hal_status_t gpio_toggle(gpio_pin_t pin);
 
 #endif

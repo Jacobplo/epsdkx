@@ -3,8 +3,8 @@
 
 #include "common/halstatus.h"
 
-static inline hal_status_t pinctrl_init(void);
+hal_status_t pinctrl_init(void);
 
-static inline hal_status_t pinctrl_disable_jtag(void);
+hal_status_t pinctrl_disable_jtag(void);
 
 #endif

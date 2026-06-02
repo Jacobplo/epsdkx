@@ -5,10 +5,12 @@
 
 #include "common/halstatus.h"
 
-static inline hal_status_t haltime_init(void);
+hal_status_t haltime_init(void);
 
-static inline hal_status_t delay_ticks(uint32_t ticks);
+hal_status_t delay_ticks(uint32_t ticks);
 
-static inline hal_status_t get_ticks(uint32_t *ret);
+hal_status_t get_ticks(uint32_t *ret_ticks);
+
+hal_status_t delay_ms(uint32_t ms);
 
 #endif

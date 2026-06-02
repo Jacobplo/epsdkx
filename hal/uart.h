@@ -5,6 +5,6 @@
 
 #include "common/halstatus.h"
 
-static inline hal_status_t uart_init(void);
+hal_status_t uart_init(void);
 
 #endif
