@@ -1,9 +1,27 @@
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "hal/gpio.h"
 #include "hal/common/halstatus.h"
 
 #include "stm32f1xx.h"
+
+
+typedef struct {
+  bool supported; 
+  uint8_t mode_bits;
+  uint8_t cnf_bits;
+} gpio_config_entry_t;
+
+static const gpio_config_entry_t gpio_config_map[GPIO_MODE_COUNT] = {
+  [GPIO_IN_ANALOG]           = { .supported = true, .mode_bits = 0x0, .cnf_bits = 0x0 },
+  [GPIO_IN_FLOATING]         = { .supported = true, .mode_bits = 0x0, .cnf_bits = 0x1 },
+  [GPIO_IN_PULL_UP_DOWN]     = { .supported = true, .mode_bits = 0x0, .cnf_bits = 0x2 },
+  [GPIO_OUT_PUSH_PULL]       = { .supported = true, .mode_bits = 0x2, .cnf_bits = 0x0 },
+  [GPIO_OUT_OPEN_DRAIN]      = { .supported = true, .mode_bits = 0x2, .cnf_bits = 0x1 },
+  [GPIO_OUT_ALT_PUSH_PULL]   = { .supported = true, .mode_bits = 0x2, .cnf_bits = 0x2 },
+  [GPIO_OUT_ALT_OPEN_DRAIN]  = { .supported = true, .mode_bits = 0x2, .cnf_bits = 0x3 },
+};
 
 #define GPIO(port) ((GPIO_TypeDef *) (GPIOA_BASE + (uintptr_t)(0x400 * ((port) - 'A'))))
 
@@ -14,20 +32,25 @@ hal_status_t gpio_init(void) {
   return HAL_OK;
 }
 
-hal_status_t gpio_configure(gpio_pin_t pin, gpio_mode_t mode, gpio_configuration_t configuration) {
+hal_status_t gpio_configure(gpio_pin_t pin, gpio_mode_t mode) {
+  if (mode >= GPIO_MODE_COUNT) return HAL_ERR_INVALID_ARG;
+  if (!gpio_config_map[mode].supported) return HAL_ERR_INVALID_ARG;
+
   GPIO_TypeDef *gpio = GPIO(pin.port_pin.port);
   int8_t pin_num = pin.port_pin.pin;
+
+  gpio_config_entry_t cfg = gpio_config_map[mode];
 
   // Pins 0-7
   if(pin_num < 8) {
     gpio->CRL &= ~(15u << (pin_num * 4));
-    gpio->CRL |= (uint32_t)(((configuration << 2) | mode) << (pin_num * 4));
+    gpio->CRL |= (uint32_t)(((cfg.cnf_bits << 2) | cfg.mode_bits) << (pin_num * 4));
   }
 
   // Pins 8-15
   else {
     gpio->CRH &= ~(15u << ((pin_num - 8) * 4));
-    gpio->CRH |= (uint32_t)(((configuration << 2) | mode) << ((pin_num - 8) * 4));
+    gpio->CRH |= (uint32_t)(((cfg.cnf_bits << 2) | cfg.mode_bits) << ((pin_num - 8) * 4));
   }
 
   return HAL_OK;

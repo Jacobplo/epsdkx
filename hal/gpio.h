@@ -13,37 +13,34 @@ typedef union {
   uint16_t pin_id;
 } gpio_pin_t;
 
-// GPIO pin mode
-typedef enum {
-  GPIO_INPUT,
-  GPIO_OUTPUT_10MHZ,
-  GPIO_OUTPUT_2MHZ,
-  GPIO_OUTPUT_50MHZ
-} gpio_mode_t;
-
-// GPIO pin configuration
+// GPIO pin mode 
 typedef enum {
   // Input
-  GPIO_IN_ANALOG,
   GPIO_IN_FLOATING,
   GPIO_IN_PULL_UP_DOWN,
+  GPIO_IN_ANALOG,
 
   // Output
   GPIO_OUT_PUSH_PULL,
   GPIO_OUT_OPEN_DRAIN,
   GPIO_OUT_ALT_PUSH_PULL,
-  GPIO_OUT_ALT_OPEN_DRAIN
-} gpio_configuration_t;
+  GPIO_OUT_ALT_OPEN_DRAIN,
+
+  GPIO_MODE_COUNT
+} gpio_mode_t;
+
+#define GPIO_IN  GPIO_IN_FLOATING;
+#define GPIO_OUT GPIO_OUT_PUSH_PULL;
 
 // GPIO State
 typedef enum {
-  GPIO_LOW = 0,
-  GPIO_HIGH = 1
+  GPIO_LOW,
+  GPIO_HIGH
 } gpio_state_t;
 
 hal_status_t gpio_init(void);
 
-hal_status_t gpio_configure(gpio_pin_t pin, gpio_mode_t mode, gpio_configuration_t configuration);
+hal_status_t gpio_configure(gpio_pin_t pin, gpio_mode_t mode);
 
 hal_status_t gpio_write(gpio_pin_t pin, gpio_state_t state);
 
