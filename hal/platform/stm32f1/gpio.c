@@ -43,13 +43,13 @@ hal_status_t gpio_configure(gpio_pin_t pin, gpio_mode_t mode) {
 
   // Pins 0-7
   if(pin_num < 8) {
-    gpio->CRL &= ~(15u << (pin_num * 4));
+    gpio->CRL &= ~(0xf << (pin_num * 4));
     gpio->CRL |= (uint32_t)(((cfg.cnf_bits << 2) | cfg.mode_bits) << (pin_num * 4));
   }
 
   // Pins 8-15
   else {
-    gpio->CRH &= ~(15u << ((pin_num - 8) * 4));
+    gpio->CRH &= ~(0xf << ((pin_num - 8) * 4));
     gpio->CRH |= (uint32_t)(((cfg.cnf_bits << 2) | cfg.mode_bits) << ((pin_num - 8) * 4));
   }
 
@@ -59,7 +59,7 @@ hal_status_t gpio_configure(gpio_pin_t pin, gpio_mode_t mode) {
 hal_status_t gpio_write(gpio_pin_t pin, gpio_state_t state) {
   GPIO_TypeDef *gpio = GPIO(pin.port_pin.port);
 
-  gpio->BSRR = (uint32_t)(1u << pin.port_pin.pin) << (state ? 0 : 16);
+  gpio->BSRR = (uint32_t)(0x1 << pin.port_pin.pin) << (state == GPIO_HIGH ? 0 : 16);
 
   return HAL_OK;
 }
@@ -67,7 +67,7 @@ hal_status_t gpio_write(gpio_pin_t pin, gpio_state_t state) {
 hal_status_t gpio_read(gpio_pin_t pin, gpio_state_t *ret_state) {
   GPIO_TypeDef *gpio = GPIO(pin.port_pin.port);
 
-  *ret_state = gpio->IDR & (1u << pin.port_pin.pin) ? GPIO_HIGH : GPIO_LOW;
+  *ret_state = gpio->IDR & (0x1 << pin.port_pin.pin) ? GPIO_HIGH : GPIO_LOW;
 
   return HAL_OK;
 };
