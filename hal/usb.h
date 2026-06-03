@@ -1,8 +1,8 @@
-#ifndef EPSDKX_USB_H
-#define EPSDKX_USB_H
+#ifndef EPSDKX_HAL_USB_H
+#define EPSDKX_HAL_USB_H
 
-#include "common/halstatus.h"
+#include "common/status.h"
 
-hal_status_t usb_init(void);
+hal_status_e hal_usb_init(void);
 
 #endif

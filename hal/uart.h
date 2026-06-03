@@ -1,10 +1,10 @@
-#ifndef EPSDKX_UART_H
-#define EPSDKX_UART_H
+#ifndef EPSDKX_HAL_UART_H
+#define EPSDKX_HAL_UART_H
 
 #include <stdint.h>
 
-#include "common/halstatus.h"
+#include "common/status.h"
 
-hal_status_t uart_init(void);
+hal_status_e hal_uart_init(void);
 
 #endif
