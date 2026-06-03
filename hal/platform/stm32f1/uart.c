@@ -1,9 +1,9 @@
 #include "hal/uart.h"
-#include "hal/common/halstatus.h"
+#include "hal/common/status.h"
 
 #include "stm32f1xx.h"
 
-hal_status_t uart_init(void) {
+hal_status_e uart_init(void) {
   // USART1
   RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
 

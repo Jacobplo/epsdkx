@@ -56,7 +56,7 @@ hal_status_e hal_gpio_configure(hal_gpio_pin_u pin, hal_gpio_mode_e mode) {
   return HAL_STATUS_OK;
 }
 
-hal_status_e hal_gpio_write(gpio_pin_u pin, gpio_state_e state) {
+hal_status_e hal_gpio_write(hal_gpio_pin_u pin, hal_gpio_state_e state) {
   GPIO_TypeDef *gpio = GPIO(pin.port_pin.port);
 
   gpio->BSRR = (uint32_t)(0x1 << pin.port_pin.pin) << (state == HAL_GPIO_HIGH ? 0 : 16);
@@ -64,7 +64,7 @@ hal_status_e hal_gpio_write(gpio_pin_u pin, gpio_state_e state) {
   return HAL_STATUS_OK;
 }
 
-hal_status_e hal_gpio_read(gpio_pin_u pin, gpio_state_e *ret_state) {
+hal_status_e hal_gpio_read(hal_gpio_pin_u pin, hal_gpio_state_e *ret_state) {
   GPIO_TypeDef *gpio = GPIO(pin.port_pin.port);
 
   *ret_state = gpio->IDR & (0x1 << pin.port_pin.pin) ? HAL_GPIO_HIGH : HAL_GPIO_LOW;
@@ -72,11 +72,11 @@ hal_status_e hal_gpio_read(gpio_pin_u pin, gpio_state_e *ret_state) {
   return HAL_STATUS_OK;
 };
 
-hal_status_e hal_gpio_toggle(gpio_pin_u pin) {
+hal_status_e hal_gpio_toggle(hal_gpio_pin_u pin) {
   hal_status_e status;
 
-  gpio_state_e state;
-  status = hal_gpio_read(&state, pin);
+  hal_gpio_state_e state;
+  status = hal_gpio_read(pin, &state);
 
   if (status == HAL_STATUS_OK) {
     status = hal_gpio_write(pin, state);
