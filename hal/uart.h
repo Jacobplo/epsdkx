@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "common/status.h"
+#include "hal/common/status.h"
 
 hal_status_e hal_uart_init(void);
 
