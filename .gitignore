@@ -57,5 +57,7 @@ dkms.conf
 
 compile_commands.json
 .cache
-.config
-config.h
+
+/main.c
+/prj.conf
+build/
