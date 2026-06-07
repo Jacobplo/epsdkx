@@ -36,7 +36,7 @@ INCLUDE      := -isystem $(SDK_ROOT)/include \
 
 DEFINE       :=
 
-SOURCES      :=
+SOURCES      := main.c
 ASM_SOURCES  :=
 src-y        :=
 

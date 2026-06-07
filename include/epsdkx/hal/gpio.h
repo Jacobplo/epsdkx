@@ -39,12 +39,12 @@ typedef enum {
 
 void hal_gpio_init(void);
 
-int hal_gpio_configure(hal_gpio_pin_u pin, hal_gpio_mode_e mode);
+int hal_gpio_configure(hal_gpio_pin_u *pin, hal_gpio_mode_e mode);
 
-void hal_gpio_write(hal_gpio_pin_u pin, hal_gpio_state_e state);
+void hal_gpio_write(hal_gpio_pin_u *pin, hal_gpio_state_e state);
 
-hal_gpio_state_e hal_gpio_read(hal_gpio_pin_u pin);
+hal_gpio_state_e hal_gpio_read(hal_gpio_pin_u *pin);
 
-void hal_gpio_toggle(hal_gpio_pin_u pin);
+void hal_gpio_toggle(hal_gpio_pin_u *pin);
 
 #endif

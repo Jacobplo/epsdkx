@@ -30,12 +30,12 @@ void hal_gpio_init(void) {
                   RCC_APB2ENR_IOPDEN | RCC_APB2ENR_IOPEEN;
 }
 
-int hal_gpio_configure(hal_gpio_pin_u pin, hal_gpio_mode_e mode) {
+int hal_gpio_configure(hal_gpio_pin_u *pin, hal_gpio_mode_e mode) {
   if (mode >= HAL_GPIO_MODE_COUNT) return -EINVAL;
   if (!gpio_config_map[mode].supported) return -EINVAL;
 
-  GPIO_TypeDef *gpio = GPIO(pin.port_pin.port);
-  int8_t pin_num = pin.port_pin.pin;
+  GPIO_TypeDef *gpio = GPIO(pin->port_pin.port);
+  int8_t pin_num = pin->port_pin.pin;
 
   hal_gpio_config_s cfg = gpio_config_map[mode];
 
@@ -54,19 +54,19 @@ int hal_gpio_configure(hal_gpio_pin_u pin, hal_gpio_mode_e mode) {
   return 0;
 }
 
-void hal_gpio_write(hal_gpio_pin_u pin, hal_gpio_state_e state) {
-  GPIO_TypeDef *gpio = GPIO(pin.port_pin.port);
+void hal_gpio_write(hal_gpio_pin_u *pin, hal_gpio_state_e state) {
+  GPIO_TypeDef *gpio = GPIO(pin->port_pin.port);
 
-  gpio->BSRR = (uint32_t)(0x1 << pin.port_pin.pin) << (state == HAL_GPIO_HIGH ? 0 : 16);
+  gpio->BSRR = (uint32_t)(0x1 << pin->port_pin.pin) << (state == HAL_GPIO_HIGH ? 0 : 16);
 }
 
-hal_gpio_state_e hal_gpio_read(hal_gpio_pin_u pin) {
-  GPIO_TypeDef *gpio = GPIO(pin.port_pin.port);
+hal_gpio_state_e hal_gpio_read(hal_gpio_pin_u *pin) {
+  GPIO_TypeDef *gpio = GPIO(pin->port_pin.port);
 
-  return gpio->IDR & (0x1 << pin.port_pin.pin) ? HAL_GPIO_HIGH : HAL_GPIO_LOW;
+  return gpio->IDR & (0x1 << pin->port_pin.pin) ? HAL_GPIO_HIGH : HAL_GPIO_LOW;
 };
 
-void hal_gpio_toggle(hal_gpio_pin_u pin) {
+void hal_gpio_toggle(hal_gpio_pin_u *pin) {
   hal_gpio_state_e state = hal_gpio_read(pin);
 
   state == HAL_GPIO_HIGH ? hal_gpio_write(pin, HAL_GPIO_LOW) : hal_gpio_write(pin, HAL_GPIO_HIGH);
