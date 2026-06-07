@@ -160,3 +160,7 @@ build: check $(BUILD_DIR)/firmware.bin
 clean:
 	@printf '\tRM\t%s\n' build/
 	@rm -rf $(BUILD_DIR)
+
+.PHONY: compile_commands.json
+compile_commands.json:
+	@bear -- make -B build
