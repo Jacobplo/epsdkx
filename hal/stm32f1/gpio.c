@@ -1,8 +1,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "epsdkx/hal/gpio.h"
-#include "epsdkx/hal/common/status.h"
+#include <epsdkx/hal/gpio.h>
+#include <epsdkx/hal/common/status.h>
 
 #include "stm32f1xx.h"
 

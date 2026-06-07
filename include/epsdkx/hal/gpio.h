@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "epsdkx/hal/common/status.h"
+#include <epsdkx/hal/common/status.h>
 
 typedef union {
   struct {

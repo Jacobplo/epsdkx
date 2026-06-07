@@ -23,15 +23,15 @@ OUTPUT_DIR   := $(CURDIR)
 BUILD_DIR    := $(OUTPUT_DIR)/build
 OBJ_DIR      := $(BUILD_DIR)/objs
 DEP_DIR      := $(BUILD_DIR)/deps
-GEN_INC_DIR  := $(BUILD_DIR)/include/generated
+GEN_INC_DIR  := $(BUILD_DIR)/include/epsdkx/generated
 
 # ================
 # Build Parameters
 # ================
 
-INCLUDE      := -I$(SDK_ROOT)/include \
-                -I$(BUILD_DIR)/include \
-                -I$(BOARD_DIR)/include
+INCLUDE      := -isystem $(SDK_ROOT)/include \
+                -isystem $(BUILD_DIR)/include \
+                -isystem $(BOARD_DIR)/include
 
 DEFINE       :=
 
