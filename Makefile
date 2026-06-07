@@ -39,9 +39,8 @@ SOURCES      :=
 ASM_SOURCES  :=
 
 CFLAGS       := -W -Wall -Wextra -Werror -Wundef -Wshadow -Wdouble-promotion \
-                -Wformat-truncation -fno-common \
-                -g3 -O2 -ffunction-sections -fdata-sections \
-                -MMD -MP
+                -Wformat-truncation -fno-common -ffunction-sections -fdata-sections \
+                -MMD -MP -O2
 
 LDFLAGS      := -lc -lgcc -Wl,--gc-sections -Wl,-Map=$(BUILD_DIR)/firmware.map
 
@@ -57,6 +56,10 @@ export FAMILY             := $(FAMILY)
 KCONFIGS := $(shell find $(SDK_ROOT) -name "Kconfig")
 
 -include $(KCONFIG_CONFIG)
+
+ifeq ($(CONFIG_DEBUG),y)
+CFLAGS += -g3
+endif
 
 # =================
 # Makefile Includes
@@ -80,19 +83,19 @@ DEPS         := $(SOURCES:%.c=$(DEP_DIR)/%.d)
 -include $(DEPS)
 
 # Build object files and dependency files (.o and .d)
-$(OBJ_DIR)/%.o: %.c
+$(OBJ_DIR)/%.o: %.c $(KCONFIG_CONFIG)
 	@printf '\tCC\t%s\n' $<
 	@mkdir -p $(dir $@) $(dir $(DEP_DIR)/$*)
 	@$(CC) $(CFLAGS) $(INCLUDE) $(DEFINE) -c $< -o $@ -MF $(DEP_DIR)/$*.d
 
 # Build object files for ASM files
-$(OBJ_DIR)/%.o: %.s
+$(OBJ_DIR)/%.o: %.s $(KCONFIG_CONFIG)
 	@printf '\tCC\t%s\n' $<
 	@mkdir -p $(dir $@)
 	@$(CC) $(CFLAGS) -c $< -o $@
 
 # Build flashable firmware
-$(BUILD_DIR)/firmware.elf: $(OBJS) $(ASM_OBJS) $(BOARD_DIR)/link.ld
+$(BUILD_DIR)/firmware.elf: $(OBJS) $(ASM_OBJS) $(BOARD_DIR)/link.ld $(KCONFIG_CONFIG)
 	@printf '\tLD\t%s\n' $@
 	@$(CC) $(OBJS) $(ASM_OBJS) $(CFLAGS) $(LDFLAGS) -o $@
 
