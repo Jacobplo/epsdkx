@@ -103,6 +103,8 @@ $(BUILD_DIR)/firmware.bin: $(BUILD_DIR)/firmware.elf
 .PHONY: build
 build: $(BUILD_DIR)/firmware.bin
 
+
+
 .PHONY: genconfig
 genconfig: $(KCONFIG_AUTOHEADER)
 
@@ -114,10 +116,10 @@ $(KCONFIG_AUTOHEADER): $(KCONFIG_CONFIG)
 .PHONY: defconfig
 defconfig: $(KCONFIG_CONFIG)
 
-$(KCONFIG_CONFIG): $(KCONFIGS)
+$(KCONFIG_CONFIG): $(KCONFIGS) $(srctree)/prj.conf
 	@printf '\tKCONFIG defconfig\n'
 	@mkdir -p $(BUILD_DIR)
-	@defconfig --kconfig $(SDK_ROOT)/Kconfig prj.conf > /dev/null
+	@defconfig --kconfig $(SDK_ROOT)/Kconfig $(srctree)/prj.conf > /dev/null
 
 .PHONY: checkconfig
 checkconfig: 
