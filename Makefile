@@ -9,7 +9,7 @@ OBJCOPY      := arm-none-eabi-objcopy
 # ==============
 
 .PHONY: all
-all: genconfig checkconfig build
+all: setup check build
 
 # ===================
 # Directory Constants
@@ -24,6 +24,7 @@ BUILD_DIR    := $(OUTPUT_DIR)/build
 OBJ_DIR      := $(BUILD_DIR)/objs
 DEP_DIR      := $(BUILD_DIR)/deps
 GEN_INC_DIR  := $(BUILD_DIR)/include/epsdkx/generated
+STAMP_DIR    := $(BUILD_DIR)/stamps
 
 # ================
 # Build Parameters
@@ -44,6 +45,8 @@ CFLAGS       := -W -Wall -Wextra -Werror -Wundef -Wshadow -Wdouble-promotion \
 
 LDFLAGS      := -lc -lgcc -Wl,--gc-sections -Wl,-Map=$(BUILD_DIR)/firmware.map
 
+CHECK_KCONFIG :=
+
 # ===================
 # Kconfig Environment
 # ===================
@@ -55,7 +58,9 @@ export FAMILY             := $(FAMILY)
 
 KCONFIGS := $(shell find $(SDK_ROOT) -name "Kconfig")
 
+ifeq ($(filter clean, $(MAKECMDGOALS)),)
 -include $(KCONFIG_CONFIG)
+endif
 
 ifeq ($(CONFIG_DEBUG),y)
 CFLAGS += -g3
@@ -103,16 +108,18 @@ $(BUILD_DIR)/firmware.bin: $(BUILD_DIR)/firmware.elf
 	@printf '\tOBJCPY\t%s\n' $@
 	@$(OBJCOPY) -O binary $< $@
 
-.PHONY: build
-build: $(BUILD_DIR)/firmware.bin
 
 
+# Kconfig Targets
+
+.PHONY: kconfig
+kconfig: genconfig defconfig
 
 .PHONY: genconfig
 genconfig: $(KCONFIG_AUTOHEADER)
 
 $(KCONFIG_AUTOHEADER): $(KCONFIG_CONFIG)
-	@printf '\tKCONFIG genconfig\n'
+	@printf '\tKCONFIG\tgenconfig\n'
 	@mkdir -p $(GEN_INC_DIR)
 	@genconfig $(SDK_ROOT)/Kconfig
 
@@ -120,12 +127,31 @@ $(KCONFIG_AUTOHEADER): $(KCONFIG_CONFIG)
 defconfig: $(KCONFIG_CONFIG)
 
 $(KCONFIG_CONFIG): $(KCONFIGS) $(srctree)/prj.conf
-	@printf '\tKCONFIG defconfig\n'
+	@printf '\tKCONFIG\tdefconfig\n'
 	@mkdir -p $(BUILD_DIR)
 	@defconfig --kconfig $(SDK_ROOT)/Kconfig $(srctree)/prj.conf > /dev/null
 
-.PHONY: checkconfig
-checkconfig: 
+.PHONY: check-kconfig
+check-kconfig: $(STAMP_DIR)/check-kconfig.stamp
+
+$(STAMP_DIR)/check-kconfig.stamp: $(KCONFIG_CONFIG)
+	@mkdir -p $(dir $@)
+	@printf '\tCHECK\tKconfig\n'
+	@$(CHECK_KCONFIG)
+	@touch $@
+
+
+
+# Other Helper Targets
+
+.PHONY: setup
+setup: kconfig
+
+.PHONY: check
+check: setup check-kconfig
+
+.PHONY: build
+build: check $(BUILD_DIR)/firmware.bin
 
 .PHONY: clean
 clean:
