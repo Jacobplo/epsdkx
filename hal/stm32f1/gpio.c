@@ -1,8 +1,8 @@
 #include <stdint.h>
 #include <stdbool.h>
+#include <errno.h>
 
 #include <epsdkx/hal/gpio.h>
-#include <epsdkx/hal/common/status.h>
 
 #include "stm32f1xx.h"
 
@@ -25,16 +25,14 @@ static const hal_gpio_config_s gpio_config_map[HAL_GPIO_MODE_COUNT] = {
 
 #define GPIO(port) ((GPIO_TypeDef *) (GPIOA_BASE + (uintptr_t)(0x400 * ((port) - 'A'))))
 
-hal_status_e hal_gpio_init(void) {
+void hal_gpio_init(void) {
   RCC->APB2ENR |= RCC_APB2ENR_IOPAEN | RCC_APB2ENR_IOPBEN | RCC_APB2ENR_IOPCEN |
                   RCC_APB2ENR_IOPDEN | RCC_APB2ENR_IOPEEN;
-
-  return HAL_STATUS_OK;
 }
 
-hal_status_e hal_gpio_configure(hal_gpio_pin_u pin, hal_gpio_mode_e mode) {
-  if (mode >= HAL_GPIO_MODE_COUNT) return HAL_STATUS_ERR_INVALID_ARG;
-  if (!gpio_config_map[mode].supported) return HAL_STATUS_ERR_INVALID_ARG;
+int hal_gpio_configure(hal_gpio_pin_u pin, hal_gpio_mode_e mode) {
+  if (mode >= HAL_GPIO_MODE_COUNT) return -EINVAL;
+  if (!gpio_config_map[mode].supported) return -EINVAL;
 
   GPIO_TypeDef *gpio = GPIO(pin.port_pin.port);
   int8_t pin_num = pin.port_pin.pin;
@@ -53,34 +51,23 @@ hal_status_e hal_gpio_configure(hal_gpio_pin_u pin, hal_gpio_mode_e mode) {
     gpio->CRH |= (uint32_t)(((cfg.cnf_bits << 2) | cfg.mode_bits) << ((pin_num - 8) * 4));
   }
 
-  return HAL_STATUS_OK;
+  return 0;
 }
 
-hal_status_e hal_gpio_write(hal_gpio_pin_u pin, hal_gpio_state_e state) {
+void hal_gpio_write(hal_gpio_pin_u pin, hal_gpio_state_e state) {
   GPIO_TypeDef *gpio = GPIO(pin.port_pin.port);
 
   gpio->BSRR = (uint32_t)(0x1 << pin.port_pin.pin) << (state == HAL_GPIO_HIGH ? 0 : 16);
-
-  return HAL_STATUS_OK;
 }
 
-hal_status_e hal_gpio_read(hal_gpio_pin_u pin, hal_gpio_state_e *ret_state) {
+hal_gpio_state_e hal_gpio_read(hal_gpio_pin_u pin) {
   GPIO_TypeDef *gpio = GPIO(pin.port_pin.port);
 
-  *ret_state = gpio->IDR & (0x1 << pin.port_pin.pin) ? HAL_GPIO_HIGH : HAL_GPIO_LOW;
-
-  return HAL_STATUS_OK;
+  return gpio->IDR & (0x1 << pin.port_pin.pin) ? HAL_GPIO_HIGH : HAL_GPIO_LOW;
 };
 
-hal_status_e hal_gpio_toggle(hal_gpio_pin_u pin) {
-  hal_status_e status;
+void hal_gpio_toggle(hal_gpio_pin_u pin) {
+  hal_gpio_state_e state = hal_gpio_read(pin);
 
-  hal_gpio_state_e state;
-  status = hal_gpio_read(pin, &state);
-
-  if (status == HAL_STATUS_OK) {
-    status = hal_gpio_write(pin, state);
-  }
-
-  return status;
+  state == HAL_GPIO_HIGH ? hal_gpio_write(pin, HAL_GPIO_LOW) : hal_gpio_write(pin, HAL_GPIO_HIGH);
 }

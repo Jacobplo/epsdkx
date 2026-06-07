@@ -1,9 +1,8 @@
-#ifndef __EPSDKX_HAL_GPIO_H
-#define __EPSDKX_HAL_GPIO_H
+#ifndef _EPSDKX_HAL_GPIO_H
+#define _EPSDKX_HAL_GPIO_H
 
 #include <stdint.h>
 
-#include <epsdkx/hal/common/status.h>
 
 typedef union {
   struct {
@@ -38,14 +37,14 @@ typedef enum {
   HAL_GPIO_HIGH
 } hal_gpio_state_e;
 
-hal_status_e hal_gpio_init(void);
+void hal_gpio_init(void);
 
-hal_status_e hal_gpio_configure(hal_gpio_pin_u pin, hal_gpio_mode_e mode);
+int hal_gpio_configure(hal_gpio_pin_u pin, hal_gpio_mode_e mode);
 
-hal_status_e hal_gpio_write(hal_gpio_pin_u pin, hal_gpio_state_e state);
+void hal_gpio_write(hal_gpio_pin_u pin, hal_gpio_state_e state);
 
-hal_status_e hal_gpio_read(hal_gpio_pin_u pin, hal_gpio_state_e *ret_state);
+hal_gpio_state_e hal_gpio_read(hal_gpio_pin_u pin);
 
-hal_status_e hal_gpio_toggle(hal_gpio_pin_u pin);
+void hal_gpio_toggle(hal_gpio_pin_u pin);
 
 #endif

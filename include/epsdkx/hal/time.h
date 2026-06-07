@@ -1,16 +1,15 @@
-#ifndef __EPSDKX_HAL_TIME_H
-#define __EPSDKX_HAL_TIME_H
+#ifndef _EPSDKX_HAL_TIME_H
+#define _EPSDKX_HAL_TIME_H
 
 #include <stdint.h>
 
-#include <epsdkx/hal/common/status.h>
 
-hal_status_e hal_time_init(void);
+void hal_time_init(void);
 
-hal_status_e hal_time_delay_ticks(uint32_t ticks);
+void hal_time_delay_ticks(uint32_t ticks);
 
-hal_status_e hal_time_get_ticks(uint32_t *ret_ticks);
+uint32_t hal_time_get_ticks(void);
 
-hal_status_e hal_time_delay_ms(uint32_t ms);
+void hal_time_delay_ms(uint32_t ms);
 
 #endif
