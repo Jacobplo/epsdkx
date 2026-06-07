@@ -38,6 +38,7 @@ DEFINE       :=
 
 SOURCES      :=
 ASM_SOURCES  :=
+obj-y        :=
 
 CFLAGS       := -W -Wall -Wextra -Werror -Wundef -Wshadow -Wdouble-promotion \
                 -Wformat-truncation -fno-common -ffunction-sections -fdata-sections \
@@ -45,7 +46,7 @@ CFLAGS       := -W -Wall -Wextra -Werror -Wundef -Wshadow -Wdouble-promotion \
 
 LDFLAGS      := -lc -lgcc -Wl,--gc-sections -Wl,-Map=$(BUILD_DIR)/firmware.map
 
-CHECK_KCONFIG :=
+CHECK_CONFIG :=
 
 # ===================
 # Kconfig Environment
@@ -76,6 +77,8 @@ endif
 # ============
 # Object Files
 # ============
+
+SOURCES      += $(src-y)
 
 OBJS         := $(SOURCES:%.c=$(OBJ_DIR)/%.o)
 ASM_OBJS     := $(ASM_SOURCES:%.s=$(OBJ_DIR)/%.o)

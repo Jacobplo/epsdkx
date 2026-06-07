@@ -8,15 +8,6 @@ CHECK_KCONFIG += $(foreach module,$(HAL_MODULES), \
 		exit 1; \
 	fi;)
 
-
-ifeq ($(CONFIG_GPIO),y)
-SOURCES += $(HAL_DIR)/gpio.c
-endif
-
-ifeq ($(CONFIG_UART),y)
-SOURCES += $(HAL_DIR)/uart.c
-endif
-
-ifeq ($(CONFIG_USB),y)
-SOURCES += $(HAL_DIR)/usb.c
-endif
+src-$(CONFIG_GPIO) += $(HAL_DIR)/gpio.c
+src-$(CONFIG_UART) += $(HAL_DIR)/uart.c
+src-$(CONFIG_USB)  += $(HAL_DIR)/usb.c
