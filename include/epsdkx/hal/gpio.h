@@ -28,8 +28,8 @@ typedef enum {
   HAL_GPIO_MODE_COUNT
 } hal_gpio_mode_e;
 
-#define HAL_GPIO_IN  HAL_GPIO_IN_FLOATING;
-#define HAL_GPIO_OUT HAL_GPIO_OUT_PUSH_PULL;
+#define HAL_GPIO_IN  HAL_GPIO_IN_FLOATING
+#define HAL_GPIO_OUT HAL_GPIO_OUT_PUSH_PULL
 
 // GPIO State
 typedef enum {
