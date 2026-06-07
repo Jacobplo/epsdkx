@@ -1,5 +1,5 @@
-#ifndef __EPSDKX_HAL_USB_H
-#define __EPSDKX_HAL_USB_H
+#ifndef _EPSDKX_HAL_USB_H
+#define _EPSDKX_HAL_USB_H
 
 
 void hal_usb_init(void);
