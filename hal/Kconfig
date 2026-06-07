@@ -1,0 +1,24 @@
+rsource "$(FAMILY)/Kconfig"
+
+config GPIO
+  bool "Enable GPIO Driver"
+  depends on PLATFORM_SUPPORTS_GPIO
+
+config PLATFORM_SUPPORTS_GPIO
+  bool
+
+
+config UART
+  bool "Enable UART Driver"
+  depends on PLATFORM_SUPPORTS_UART
+
+config PLATFORM_SUPPORTS_UART
+  bool
+
+
+config USB
+  bool "Enable USB Driver"
+  depends on PLATFORM_SUPPORTS_USB
+
+config PLATFORM_SUPPORTS_USB
+  bool

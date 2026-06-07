@@ -1,0 +1,8 @@
+config PLATFORM_SUPPORTS_GPIO
+  def_bool y
+
+config PLATFORM_SUPPORTS_UART
+  def_bool y
+
+config PLATFORM_SUPPORTS_USB
+  def_bool y
