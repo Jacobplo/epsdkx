@@ -163,4 +163,4 @@ clean:
 
 .PHONY: compile_commands.json
 compile_commands.json:
-	@bear -- make -B build
+	@bear -- $(MAKE) -B build
