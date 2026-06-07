@@ -1,9 +1,9 @@
-#ifndef EPSDKX_HAL_TIME_H
-#define EPSDKX_HAL_TIME_H
+#ifndef __EPSDKX_HAL_TIME_H
+#define __EPSDKX_HAL_TIME_H
 
 #include <stdint.h>
 
-#include "hal/common/status.h"
+#include "epsdkx/hal/common/status.h"
 
 hal_status_e hal_time_init(void);
 

@@ -1,9 +1,9 @@
-#ifndef EPSDKX_HAL_GPIO_H
-#define EPSDKX_HAL_GPIO_H
+#ifndef __EPSDKX_HAL_GPIO_H
+#define __EPSDKX_HAL_GPIO_H
 
 #include <stdint.h>
 
-#include "hal/common/status.h"
+#include "epsdkx/hal/common/status.h"
 
 typedef union {
   struct {

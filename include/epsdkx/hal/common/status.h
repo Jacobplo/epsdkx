@@ -1,5 +1,5 @@
-#ifndef EPSDKX_HAL_STATUS_H
-#define EPSDKX_HAL_STATUS_H
+#ifndef __EPSDKX_HAL_STATUS_H
+#define __EPSDKX_HAL_STATUS_H
 
 typedef enum {
   HAL_STATUS_BUSY = 2,
