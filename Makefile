@@ -46,7 +46,7 @@ CFLAGS       := -W -Wall -Wextra -Werror -Wundef -Wshadow -Wdouble-promotion \
 
 LDFLAGS      := -lc -lgcc -Wl,--gc-sections -Wl,-Map=$(BUILD_DIR)/firmware.map
 
-CHECK_CONFIG :=
+CHECK_KCONFIG :=
 
 # ===================
 # Kconfig Environment
