@@ -38,7 +38,7 @@ DEFINE       :=
 
 SOURCES      :=
 ASM_SOURCES  :=
-obj-y        :=
+src-y        :=
 
 CFLAGS       := -W -Wall -Wextra -Werror -Wundef -Wshadow -Wdouble-promotion \
                 -Wformat-truncation -fno-common -ffunction-sections -fdata-sections \
