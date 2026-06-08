@@ -43,7 +43,7 @@ src-y        :=
 
 CFLAGS       := -W -Wall -Wextra -Werror -Wundef -Wshadow -Wdouble-promotion \
                 -Wformat-truncation -fno-common -ffunction-sections -fdata-sections \
-                -MMD -MP -O2
+                -MD -MP -O2
 
 LDFLAGS      := -lc -lgcc -Wl,--gc-sections -Wl,-Map=$(BUILD_DIR)/firmware.map
 
