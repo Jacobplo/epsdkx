@@ -16,6 +16,7 @@ all: setup check build
 # ===================
 
 SDK_ROOT     := $(patsubst %/,%,$(dir $(realpath $(lastword $(MAKEFILE_LIST)))))
+SRC_TREE     := $(patsubst %/,%,$(dir $(realpath $(firstword $(MAKEFILE_LIST)))))
 BOARD_DIR    := $(SDK_ROOT)/bsp/$(FAMILY)/$(BOARD)
 HAL_DIR      := $(SDK_ROOT)/hal/$(FAMILY)
 OUTPUT_DIR   := $(CURDIR)
@@ -36,7 +37,7 @@ INCLUDE      := -isystem $(SDK_ROOT)/include \
 
 DEFINE       :=
 
-SOURCES      := main.c
+SOURCES      :=
 ASM_SOURCES  :=
 src-y        :=
 
@@ -54,7 +55,7 @@ CHECK_KCONFIG :=
 
 export KCONFIG_CONFIG     := $(BUILD_DIR)/.config
 export KCONFIG_AUTOHEADER := $(GEN_INC_DIR)/config.h
-export srctree            := $(OUTPUT_DIR)
+export srctree            := $(SRC_TREE)
 export FAMILY             := $(FAMILY)
 
 KCONFIGS := $(shell find $(SDK_ROOT) -name "Kconfig")
