@@ -2,20 +2,25 @@ rsource "$(FAMILY)/Kconfig"
 
 config GPIO
   bool "Enable GPIO Driver"
-
 config PLATFORM_SUPPORTS_GPIO
   bool
 
-
 config UART
   bool "Enable UART Driver"
-
 config PLATFORM_SUPPORTS_UART
   bool
 
-
 config USB
   bool "Enable USB Driver"
-
 config PLATFORM_SUPPORTS_USB
+  bool
+
+config TIMING
+  bool "Enable timing functions"
+config PLATFORM_SUPPORTS_TIMING
+  bool
+
+config PINCTRL
+  bool "Enable pin control functions"
+config PLATFORM_SUPPORTS_PINCTRL
   bool

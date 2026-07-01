@@ -6,3 +6,9 @@ config PLATFORM_SUPPORTS_UART
 
 config PLATFORM_SUPPORTS_USB
   def_bool y
+
+config PLATFORM_SUPPORTS_TIMING
+  def_bool y
+
+config PLATFORM_SUPPORTS_PINCTRL
+  def_bool y
