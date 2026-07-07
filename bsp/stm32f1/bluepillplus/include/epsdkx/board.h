@@ -3,7 +3,8 @@
 
 #include <epsdkx/hal/gpio.h>
 
-#define PIN(p, n)           (hal_gpio_pin_u){ .port_pin = { .port = (p), .pin = (n) } }
+
+#define PIN(p, n)           PORT_PIN((p), (n))
 
 #define PIN_LED             PIN('B', 2)
 #define PIN_BTN             PIN('A', 0)

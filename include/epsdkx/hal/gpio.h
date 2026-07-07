@@ -12,6 +12,9 @@ typedef union {
   uint16_t pin_id;
 } hal_gpio_pin_u;
 
+#define PORT_PIN(p, n) (hal_gpio_pin_u){ .port_pin = { .port = (p), .pin = (n) } }
+#define PIN_ID(n)      (hal_gpio_pin_u){ .pin_id = (n) }
+
 // GPIO pin mode 
 typedef enum {
   // Input
