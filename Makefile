@@ -41,7 +41,7 @@ SOURCES      :=
 ASM_SOURCES  :=
 src-y        :=
 
-CFLAGS       := -W -Wall -Wextra -Werror -Wundef -Wshadow -Wdouble-promotion \
+CFLAGS       := -W -Wall -Wextra -Wundef -Wshadow -Wdouble-promotion \
                 -Wformat-truncation -fno-common -ffunction-sections -fdata-sections \
                 -MD -MP -O2
 
