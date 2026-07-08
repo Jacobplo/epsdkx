@@ -88,6 +88,12 @@ int hal_uart_init(hal_uart_channel_t channel, uint32_t baud_rate) {
   // cfg.reg->CR3 |= USART_CR3_DMAT | USART_CR3_DMAR;
   
   hal_uart_set_baud_rate(channel, &cfg, baud_rate);
+
+  // Transmitter enable
+  cfg.reg->CR1 |= USART_CR1_TE;
+
+  // Receiver enable.
+  cfg.reg->CR1 |= USART_CR1_RE;
   
   return 0;
 }
@@ -101,22 +107,32 @@ const hal_uart_pins_s *hal_uart_get_pins(hal_uart_channel_t channel) {
 void hal_uart_putc(hal_uart_channel_t channel, char chr) {
   hal_uart_config_s cfg = uart_pin_map[channel];
 
+  // Write to data register
   cfg.reg->DR = (unsigned char)chr;
 }
 
 void hal_uart_write(hal_uart_channel_t channel, const char *str) {
-  hal_uart_config_s cfg = uart_pin_map[channel];
-
-  cfg.reg->CR1 |= USART_CR1_TE;
+  hal_uart_config_s cfg = uart_pin_map[channel]; 
 
   while (*str != '\0') {
+    // Wait until data register is transferred to the transmission shift register.
     while (!(cfg.reg->SR & USART_SR_TXE)) (void)0;
     
     hal_uart_putc(channel, *str);
     str++;
   }
 
+  // Wait until transmission frame is complete
   while(!(cfg.reg->SR & USART_SR_TC)) (void)0;
+}
+
+char hal_uart_getc(hal_uart_channel_t channel) {
+  hal_uart_config_s cfg = uart_pin_map[channel];
+
+  // Wait until data register has data to be read.
+  while (!(cfg.reg->SR & USART_SR_RXNE)) (void)0;
+
+  return cfg.reg->DR;
 }
 
 void hal_uart_set_baud_rate(hal_uart_channel_t channel, hal_uart_config_s *cfg, uint32_t baud_rate) {

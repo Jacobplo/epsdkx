@@ -24,5 +24,7 @@ void hal_uart_putc(hal_uart_channel_t channel, char chr);
 
 void hal_uart_write(hal_uart_channel_t channel, const char *str);
 
+char hal_uart_getc(hal_uart_channel_t channel);
+
 
 #endif
