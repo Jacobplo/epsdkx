@@ -4,8 +4,9 @@
 #include <epsdkx/generated/config.h>
 #include "private/dma.h"
 
-#include <errno.h>
 #include <stdint.h>
+#include <errno.h>
+#include <stddef.h>
 
 #include "stm32f1xx.h"
 
@@ -47,19 +48,22 @@ static const hal_uart_config_s uart_pin_map[UART_CONTROLLER_COUNT] = {
 };
 
 
-static void hal_uart_set_baud_rate(hal_uart_controller_t controller, hal_uart_config_s cfg, uint32_t baud_rate);
+static void hal_uart_set_baud_rate(hal_uart_channel_t channel, hal_uart_config_s *cfg, uint32_t baud_rate);
 
 
-int hal_uart_init(hal_uart_controller_t controller, uint32_t baud_rate) {
-  if (controller >= UART_CONTROLLER_COUNT) return -EINVAL;
+int hal_uart_init(hal_uart_channel_t channel, uint32_t baud_rate) {
+  if (channel >= UART_CONTROLLER_COUNT) return -EINVAL;
 
   hal_gpio_init();
   hal_dma_init();
 
-  hal_uart_config_s cfg = uart_pin_map[controller]; 
+  hal_uart_config_s cfg = uart_pin_map[channel]; 
+
+  hal_gpio_configure(&cfg.pins.tx, HAL_GPIO_OUT_ALT_PUSH_PULL);
+  hal_gpio_configure(&cfg.pins.rx, HAL_GPIO_IN);
 
   // Enable clock for UART
-  switch(controller) {
+  switch(channel) {
     case UART(1):
       RCC->APB2ENR |= RCC_APB2ENR_USART1EN;    
       break;
@@ -83,17 +87,44 @@ int hal_uart_init(hal_uart_controller_t controller, uint32_t baud_rate) {
   // DMA enable transmitter and receiver
   // cfg.reg->CR3 |= USART_CR3_DMAT | USART_CR3_DMAR;
   
-  hal_uart_set_baud_rate(controller, cfg, baud_rate);
+  hal_uart_set_baud_rate(channel, &cfg, baud_rate);
   
   return 0;
 }
 
-void hal_uart_set_baud_rate(hal_uart_controller_t controller, hal_uart_config_s cfg, uint32_t baud_rate) {
+const hal_uart_pins_s *hal_uart_get_pins(hal_uart_channel_t channel) {
+  if (channel >= UART_CONTROLLER_COUNT) return NULL;
+
+  return &uart_pin_map[channel].pins;
+}
+
+void hal_uart_putc(hal_uart_channel_t channel, char chr) {
+  hal_uart_config_s cfg = uart_pin_map[channel];
+
+  cfg.reg->DR = (unsigned char)chr;
+}
+
+void hal_uart_write(hal_uart_channel_t channel, const char *str) {
+  hal_uart_config_s cfg = uart_pin_map[channel];
+
+  cfg.reg->CR1 |= USART_CR1_TE;
+
+  while (*str != '\0') {
+    while (!(cfg.reg->SR & USART_SR_TXE)) (void)0;
+    
+    hal_uart_putc(channel, *str);
+    str++;
+  }
+
+  while(!(cfg.reg->SR & USART_SR_TC)) (void)0;
+}
+
+void hal_uart_set_baud_rate(hal_uart_channel_t channel, hal_uart_config_s *cfg, uint32_t baud_rate) {
   uint32_t prescaler;
-  uint8_t clock_divider;
+  uint8_t clock_divider = 1;
 
   // Get PCLK
-  if (controller == UART(1)) {
+  if (channel == UART(1)) {
     prescaler = RCC->CFGR & RCC_CFGR_PPRE2;
 
     switch(prescaler) {
@@ -152,6 +183,6 @@ void hal_uart_set_baud_rate(hal_uart_controller_t controller, hal_uart_config_s 
     div_mantissa += 1u;
   } 
 
-  cfg.reg->BRR = ((div_mantissa << USART_BRR_DIV_Mantissa_Pos) & USART_BRR_DIV_Mantissa_Msk) & 
-                 ((div_fraction << USART_BRR_DIV_Fraction_Pos) & USART_BRR_DIV_Fraction_Msk);
+  cfg->reg->BRR = ((div_mantissa << USART_BRR_DIV_Mantissa_Pos) & USART_BRR_DIV_Mantissa_Msk) |
+                  ((div_fraction << USART_BRR_DIV_Fraction_Pos) & USART_BRR_DIV_Fraction_Msk);
 }

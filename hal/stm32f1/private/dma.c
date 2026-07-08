@@ -1,4 +1,4 @@
-#include <epsdkx/hal/dma.h>
+#include "dma.h"
 
 #include "stm32f1xx.h"
 

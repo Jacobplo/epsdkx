@@ -6,9 +6,9 @@
 #include <stdint.h>
 
 
-typedef uint8_t hal_uart_controller_t;
+typedef uint8_t hal_uart_channel_t;
 
-#define UART(n) (hal_uart_controller_t)((n) - 1)
+#define UART(n) (hal_uart_channel_t)((n) - 1)
 
 typedef struct {
   hal_gpio_pin_u tx;
@@ -16,6 +16,13 @@ typedef struct {
 } hal_uart_pins_s;
 
 
-int hal_uart_init(hal_uart_controller_t controller, uint32_t baud_rate);
+int hal_uart_init(hal_uart_channel_t channel, uint32_t baud_rate);
+
+const hal_uart_pins_s *hal_uart_get_pins(hal_uart_channel_t channel);
+
+void hal_uart_putc(hal_uart_channel_t channel, char chr);
+
+void hal_uart_write(hal_uart_channel_t channel, const char *str);
+
 
 #endif
