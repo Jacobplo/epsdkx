@@ -23,6 +23,8 @@ typedef struct {
   USART_TypeDef *reg;
 } hal_uart_config_s;
 
+
+
 static const hal_uart_config_s uart_pin_map[UART_CHANNEL_COUNT] = {
   [UART(1)] = (hal_uart_config_s){ 
     .pins = { 
@@ -99,7 +101,7 @@ int hal_uart_init(hal_uart_channel_t channel, uint32_t baud_rate) {
 }
 
 const hal_uart_pins_s *hal_uart_get_pins(hal_uart_channel_t channel) {
-  if (channel >= UART_CONTROLLER_COUNT) return NULL;
+  if (channel >= UART_CHANNEL_COUNT) return NULL;
 
   return &uart_pin_map[channel].pins;
 }
