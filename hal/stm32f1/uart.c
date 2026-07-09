@@ -16,14 +16,14 @@
 #endif
 
 
-#define UART_CONTROLLER_COUNT 3
+#define UART_CHANNEL_COUNT 3
 
 typedef struct {
   hal_uart_pins_s pins;
   USART_TypeDef *reg;
 } hal_uart_config_s;
 
-static const hal_uart_config_s uart_pin_map[UART_CONTROLLER_COUNT] = {
+static const hal_uart_config_s uart_pin_map[UART_CHANNEL_COUNT] = {
   [UART(1)] = (hal_uart_config_s){ 
     .pins = { 
       .tx = PORT_PIN('A', 9),
@@ -52,7 +52,7 @@ static void hal_uart_set_baud_rate(hal_uart_channel_t channel, hal_uart_config_s
 
 
 int hal_uart_init(hal_uart_channel_t channel, uint32_t baud_rate) {
-  if (channel >= UART_CONTROLLER_COUNT) return -EINVAL;
+  if (channel >= UART_CHANNEL_COUNT) return -EINVAL;
 
   hal_gpio_init();
   hal_dma_init();
@@ -107,17 +107,17 @@ const hal_uart_pins_s *hal_uart_get_pins(hal_uart_channel_t channel) {
 void hal_uart_putc(hal_uart_channel_t channel, char chr) {
   hal_uart_config_s cfg = uart_pin_map[channel];
 
+  // Wait until data register is transferred to the transmission shift register.
+  while (!(cfg.reg->SR & USART_SR_TXE)) (void)0;
+
   // Write to data register
-  cfg.reg->DR = (unsigned char)chr;
+  cfg.reg->DR = chr;
 }
 
 void hal_uart_write(hal_uart_channel_t channel, const char *str) {
   hal_uart_config_s cfg = uart_pin_map[channel]; 
 
-  while (*str != '\0') {
-    // Wait until data register is transferred to the transmission shift register.
-    while (!(cfg.reg->SR & USART_SR_TXE)) (void)0;
-    
+  while (*str != '\0') { 
     hal_uart_putc(channel, *str);
     str++;
   }
@@ -182,7 +182,6 @@ void hal_uart_set_baud_rate(hal_uart_channel_t channel, hal_uart_config_s *cfg, 
         break;
     };
   }
-
 
   uint32_t pclk = SystemCoreClock / clock_divider;
 

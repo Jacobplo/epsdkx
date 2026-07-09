@@ -9,7 +9,7 @@ uint32_t SystemCoreClock;
 void SystemInit(void) {
   // Set 8 MHz HSE clock on.
   RCC->CR |= RCC_CR_HSEON;
-  while(!(RCC->CR & RCC_CR_HSERDY)) (void) 0;
+  while(!(RCC->CR & RCC_CR_HSERDY)) (void)0;
 
   // Reconfigure flash wait state for 72 MHz
   FLASH->ACR |= FLASH_ACR_PRFTBE;
@@ -32,7 +32,7 @@ void SystemInit(void) {
  
   // Enable PLL clock
   RCC->CR |= RCC_CR_PLLON;
-  while(!(RCC->CR & RCC_CR_PLLRDY)) (void) 0;
+  while(!(RCC->CR & RCC_CR_PLLRDY)) (void)0;
 
   // Set SYSCLK to use PLL
   RCC->CFGR &= ~(RCC_CFGR_SW);
