@@ -12,8 +12,3 @@ config PLATFORM_SUPPORTS_TIMING
 
 config PLATFORM_SUPPORTS_PINCTRL
   def_bool y
-
-
-config DMA
-  bool "DMA Enable"
-  default y if UART
