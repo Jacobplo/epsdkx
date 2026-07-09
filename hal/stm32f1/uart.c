@@ -3,11 +3,13 @@
 #include <epsdkx/hal/gpio.h>
 #include <epsdkx/generated/config.h>
 #include "private/dma.h"
+#include "private/nvic.h"
 
 #include <stdint.h>
 #include <errno.h>
 #include <stddef.h>
 
+#include "stm32f103xb.h"
 #include "stm32f1xx.h"
 
 
@@ -18,12 +20,21 @@
 
 #define UART_CHANNEL_COUNT 3
 
+#define UART_RX_BUFFER_SIZE 64
+
+typedef struct {
+  char data[UART_RX_BUFFER_SIZE];
+  uint16_t tail_idx;
+  uint16_t head_idx;
+} hal_uart_rx_buffer;
+
+static hal_uart_rx_buffer rx_buf;
+
 typedef struct {
   hal_uart_pins_s pins;
   USART_TypeDef *reg;
+  hal_nvic_line_device irq;
 } hal_uart_config_s;
-
-
 
 static const hal_uart_config_s uart_pin_map[UART_CHANNEL_COUNT] = {
   [UART(1)] = (hal_uart_config_s){ 
@@ -31,26 +42,30 @@ static const hal_uart_config_s uart_pin_map[UART_CHANNEL_COUNT] = {
       .tx = PORT_PIN('A', 9),
       .rx = PORT_PIN('A', 10) 
     },
-    .reg = USART1
+    .reg = USART1,
+    .irq = NVIC_USART1
   },
   [UART(2)] = (hal_uart_config_s){ 
     .pins = { 
       .tx = PORT_PIN('A', 2),
       .rx = PORT_PIN('A', 3)
     },
-    .reg = USART2
+    .reg = USART2,
+    .irq = NVIC_USART2
   },
   [UART(3)] = (hal_uart_config_s){ 
     .pins = {
       .tx = PORT_PIN('B', 10),
       .rx = PORT_PIN('B', 11)
     },
-    .reg = USART3
+    .reg = USART3,
+    .irq = NVIC_USART3
   },
 };
 
 
 static void hal_uart_set_baud_rate(hal_uart_channel_t channel, hal_uart_config_s *cfg, uint32_t baud_rate);
+static void hal_uart_common_isr(hal_uart_config_s cfg);
 
 
 int hal_uart_init(hal_uart_channel_t channel, uint32_t baud_rate) {
@@ -94,8 +109,12 @@ int hal_uart_init(hal_uart_channel_t channel, uint32_t baud_rate) {
   // Transmitter enable
   cfg.reg->CR1 |= USART_CR1_TE;
 
-  // Receiver enable.
+  // Receiver enable
   cfg.reg->CR1 |= USART_CR1_RE;
+
+  // Receiver interrupt enable
+  hal_nvic_init_device(cfg.irq);
+  cfg.reg->CR1 |= USART_CR1_RXNEIE;
   
   return 0;
 }
@@ -129,12 +148,15 @@ void hal_uart_write(hal_uart_channel_t channel, const char *str) {
 }
 
 char hal_uart_getc(hal_uart_channel_t channel) {
-  hal_uart_config_s cfg = uart_pin_map[channel];
+  // Return EOF if buffer is empty
+  if (rx_buf.tail_idx == rx_buf.head_idx) {
+    return -1;
+  }
 
-  // Wait until data register has data to be read.
-  while (!(cfg.reg->SR & USART_SR_RXNE)) (void)0;
+  char chr = rx_buf.data[rx_buf.tail_idx];
+  rx_buf.tail_idx = (rx_buf.tail_idx + 1) % UART_RX_BUFFER_SIZE;
 
-  return cfg.reg->DR;
+  return chr;
 }
 
 void hal_uart_set_baud_rate(hal_uart_channel_t channel, hal_uart_config_s *cfg, uint32_t baud_rate) {
@@ -202,4 +224,28 @@ void hal_uart_set_baud_rate(hal_uart_channel_t channel, hal_uart_config_s *cfg, 
 
   cfg->reg->BRR = ((div_mantissa << USART_BRR_DIV_Mantissa_Pos) & USART_BRR_DIV_Mantissa_Msk) |
                   ((div_fraction << USART_BRR_DIV_Fraction_Pos) & USART_BRR_DIV_Fraction_Msk);
+}
+
+void hal_uart_common_isr(hal_uart_config_s cfg) {
+  // Do not overwrite buffer if it is full
+  if ((rx_buf.head_idx + 1) % UART_RX_BUFFER_SIZE == rx_buf.tail_idx) {
+    cfg.reg->DR;
+    return;
+  }
+
+  // Write the buffer
+  rx_buf.data[rx_buf.head_idx] = cfg.reg->DR;
+  rx_buf.head_idx = (rx_buf.head_idx + 1) % UART_RX_BUFFER_SIZE;
+}
+
+void USART1_IRQHandler() {
+  hal_uart_common_isr(uart_pin_map[UART(1)]);
+}
+
+void USART2_IRQHandler() {
+  hal_uart_common_isr(uart_pin_map[UART(2)]);
+}
+
+void USART3_IRQHandler() {
+  hal_uart_common_isr(uart_pin_map[UART(3)]);
 }
