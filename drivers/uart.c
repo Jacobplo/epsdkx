@@ -1,4 +1,4 @@
-#include <epsdkx/uart.h>
+#include <epsdkx/drivers/uart.h>
 
 #include <epsdkx/hal/uart.h>
 #include <epsdkx/common/uart.h>

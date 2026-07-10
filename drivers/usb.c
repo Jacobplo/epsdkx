@@ -1,4 +1,4 @@
-#include <epsdkx/usb.h>
+#include <epsdkx/drivers/usb.h>
 
 #include <epsdkx/hal/usb.h>
 

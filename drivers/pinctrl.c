@@ -1,4 +1,4 @@
-#include <epsdkx/pinctrl.h>
+#include <epsdkx/drivers/pinctrl.h>
 
 #include <epsdkx/hal/pinctrl.h>
 

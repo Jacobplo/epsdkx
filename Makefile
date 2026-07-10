@@ -19,7 +19,7 @@ SDK_ROOT     := $(patsubst %/,%,$(dir $(realpath $(lastword $(MAKEFILE_LIST)))))
 SRC_TREE     := $(patsubst %/,%,$(dir $(realpath $(firstword $(MAKEFILE_LIST)))))
 BOARD_DIR    := $(SDK_ROOT)/bsp/$(FAMILY)/$(BOARD)
 HAL_DIR      := $(SDK_ROOT)/hal/$(FAMILY)
-RTOS_DIR     := $(SDK_ROOT)/rtos
+DRIVER_DIR   := $(SDK_ROOT)/drivers
 OUTPUT_DIR   := $(CURDIR)
 
 BUILD_DIR    := $(OUTPUT_DIR)/build
@@ -75,7 +75,7 @@ endif
 
 -include $(BOARD_DIR)/Makefile
 -include $(SDK_ROOT)/hal/Makefile
--include $(SDK_ROOT)/rtos/Makefile
+-include $(SDK_ROOT)/drivers/Makefile
 
 # ============
 # Object Files

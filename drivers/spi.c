@@ -1,4 +1,4 @@
-#include <epsdkx/spi.h>
+#include <epsdkx/drivers/spi.h>
 
 #include <epsdkx/hal/spi.h>
 #include <epsdkx/common/spi.h>

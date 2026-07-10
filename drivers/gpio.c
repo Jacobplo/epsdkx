@@ -1,4 +1,4 @@
-#include <epsdkx/gpio.h>
+#include <epsdkx/drivers/gpio.h>
 
 #include <epsdkx/hal/gpio.h>
 #include <epsdkx/common/gpio.h>
