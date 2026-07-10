@@ -3,7 +3,7 @@
 
 #include "stm32f1xx.h"
 
-typedef enum hal_nvic_line_device {
+typedef enum hal_nvic_line_device_e {
   NVIC_WWDG          = 0,
   NVIC_PVD           = 1,
   NVIC_TAMPER        = 2,
@@ -66,9 +66,9 @@ typedef enum hal_nvic_line_device {
   NVIC_CAN2_RX1      = 65,
   NVIC_CAN2_SCE      = 66,
   NVIC_OTG_FS        = 67
-} hal_nvic_line_device;
+} hal_nvic_line_device_e;
 
-static inline void hal_nvic_init_device(hal_nvic_line_device dev) {
+static inline void hal_nvic_init_device(hal_nvic_line_device_e dev) {
   uint8_t iser_bit = 0x1 << (dev % 32u);
 
   if (dev < 32) {

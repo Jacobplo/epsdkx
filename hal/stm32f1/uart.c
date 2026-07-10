@@ -14,11 +14,11 @@
 
 
 #ifndef CONFIG_GPIO
-#error Must enable CONFIG_GPIO in order to use UART
+#error Must enable CONFIG_GPIO to use UART
 #endif
 
-
-#define UART_CHANNEL_COUNT 3
+#define UART_CHANNEL_IDX(n) ((n) - 1)
+#define UART_CHANNEL_COUNT  3
 
 #define UART_RX_BUFFER_SIZE 64
 
@@ -31,12 +31,12 @@ typedef struct hal_uart_rx_buffer_s {
 typedef struct hal_uart_config_s {
   hal_uart_pins_s pins;
   USART_TypeDef *reg;
-  hal_nvic_line_device irq;
+  hal_nvic_line_device_e irq;
   hal_uart_rx_buffer_s rx_buf;
 } hal_uart_config_s;
 
 static hal_uart_config_s uart_pin_map[UART_CHANNEL_COUNT] = {
-  [UART(1)] = (hal_uart_config_s){ 
+  [UART_CHANNEL_IDX(UART(1))] = (hal_uart_config_s){ 
     .pins = { 
       .tx = PORT_PIN('A', 9),
       .rx = PORT_PIN('A', 10) 
@@ -44,7 +44,7 @@ static hal_uart_config_s uart_pin_map[UART_CHANNEL_COUNT] = {
     .reg = USART1,
     .irq = NVIC_USART1
   },
-  [UART(2)] = (hal_uart_config_s){ 
+  [UART_CHANNEL_IDX(UART(2))] = (hal_uart_config_s){ 
     .pins = { 
       .tx = PORT_PIN('A', 2),
       .rx = PORT_PIN('A', 3)
@@ -52,7 +52,7 @@ static hal_uart_config_s uart_pin_map[UART_CHANNEL_COUNT] = {
     .reg = USART2,
     .irq = NVIC_USART2
   },
-  [UART(3)] = (hal_uart_config_s){ 
+  [UART_CHANNEL_IDX(UART(3))] = (hal_uart_config_s){ 
     .pins = {
       .tx = PORT_PIN('B', 10),
       .rx = PORT_PIN('B', 11)
@@ -73,7 +73,7 @@ int hal_uart_init(hal_uart_channel_t channel, uint32_t baud_rate) {
   hal_gpio_init();
   hal_dma_init();
 
-  hal_uart_config_s *cfg = &uart_pin_map[channel]; 
+  hal_uart_config_s *cfg = &uart_pin_map[UART_CHANNEL_IDX(channel)]; 
 
   hal_gpio_configure(&cfg->pins.tx, HAL_GPIO_OUT_ALT_PUSH_PULL);
   hal_gpio_configure(&cfg->pins.rx, HAL_GPIO_IN);
@@ -121,11 +121,11 @@ int hal_uart_init(hal_uart_channel_t channel, uint32_t baud_rate) {
 const hal_uart_pins_s *hal_uart_get_pins(hal_uart_channel_t channel) {
   if (channel >= UART_CHANNEL_COUNT) return NULL;
 
-  return &uart_pin_map[channel].pins;
+  return &uart_pin_map[UART_CHANNEL_IDX(channel)].pins;
 }
 
 void hal_uart_putc(hal_uart_channel_t channel, char chr) {
-  hal_uart_config_s *cfg = &uart_pin_map[channel];
+  hal_uart_config_s *cfg = &uart_pin_map[UART_CHANNEL_IDX(channel)];
 
   // Wait until data register is transferred to the transmission shift register.
   while (!(cfg->reg->SR & USART_SR_TXE)) (void)0;
@@ -135,7 +135,7 @@ void hal_uart_putc(hal_uart_channel_t channel, char chr) {
 }
 
 void hal_uart_write(hal_uart_channel_t channel, const char *str) {
-  hal_uart_config_s *cfg = &uart_pin_map[channel]; 
+  hal_uart_config_s *cfg = &uart_pin_map[UART_CHANNEL_IDX(channel)]; 
 
   while (*str != '\0') { 
     hal_uart_putc(channel, *str);
@@ -147,7 +147,7 @@ void hal_uart_write(hal_uart_channel_t channel, const char *str) {
 }
 
 char hal_uart_getc(hal_uart_channel_t channel) {
-  hal_uart_config_s *cfg = &uart_pin_map[channel];
+  hal_uart_config_s *cfg = &uart_pin_map[UART_CHANNEL_IDX(channel)];
 
   // Return EOF if buffer is empty
   if (cfg->rx_buf.tail_idx == cfg->rx_buf.head_idx) {
@@ -161,7 +161,7 @@ char hal_uart_getc(hal_uart_channel_t channel) {
 }
 
 void hal_uart_set_baud_rate(hal_uart_channel_t channel, uint32_t baud_rate) {
-  hal_uart_config_s *cfg = &uart_pin_map[channel];
+  hal_uart_config_s *cfg = &uart_pin_map[UART_CHANNEL_IDX(channel)];
 
   uint32_t prescaler;
   uint8_t clock_divider = 1;
@@ -230,7 +230,7 @@ void hal_uart_set_baud_rate(hal_uart_channel_t channel, uint32_t baud_rate) {
 }
 
 void hal_uart_common_isr(hal_uart_channel_t channel) {
-  hal_uart_config_s *cfg = &uart_pin_map[channel];
+  hal_uart_config_s *cfg = &uart_pin_map[UART_CHANNEL_IDX(channel)];
 
   // Do not overwrite buffer if it is full
   if ((cfg->rx_buf.head_idx + 1) % UART_RX_BUFFER_SIZE == cfg->rx_buf.tail_idx) {
