@@ -10,6 +10,11 @@ config UART
 config PLATFORM_SUPPORTS_UART
   bool
 
+config SPI 
+  bool "Enable SPI Driver"
+config PLATFORM_SUPPORTS_SPI
+  bool
+
 config USB
   bool "Enable USB Driver"
 config PLATFORM_SUPPORTS_USB
