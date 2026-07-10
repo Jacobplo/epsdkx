@@ -13,14 +13,14 @@ typedef struct hal_gpio_config_s {
   uint8_t cnf_bits;
 } hal_gpio_config_s;
 
-static const hal_gpio_config_s gpio_config_map[HAL_GPIO_MODE_COUNT] = {
-  [HAL_GPIO_IN_ANALOG]           = { .supported = true, .mode_bits = 0x0, .cnf_bits = 0x0 },
-  [HAL_GPIO_IN_FLOATING]         = { .supported = true, .mode_bits = 0x0, .cnf_bits = 0x1 },
-  [HAL_GPIO_IN_PULL_UP_DOWN]     = { .supported = true, .mode_bits = 0x0, .cnf_bits = 0x2 },
-  [HAL_GPIO_OUT_PUSH_PULL]       = { .supported = true, .mode_bits = 0x2, .cnf_bits = 0x0 },
-  [HAL_GPIO_OUT_OPEN_DRAIN]      = { .supported = true, .mode_bits = 0x2, .cnf_bits = 0x1 },
-  [HAL_GPIO_OUT_ALT_PUSH_PULL]   = { .supported = true, .mode_bits = 0x2, .cnf_bits = 0x2 },
-  [HAL_GPIO_OUT_ALT_OPEN_DRAIN]  = { .supported = true, .mode_bits = 0x2, .cnf_bits = 0x3 },
+static const hal_gpio_config_s gpio_config_map[GPIO_MODE_COUNT] = {
+  [GPIO_IN_ANALOG]           = { .supported = true, .mode_bits = 0x0, .cnf_bits = 0x0 },
+  [GPIO_IN_FLOATING]         = { .supported = true, .mode_bits = 0x0, .cnf_bits = 0x1 },
+  [GPIO_IN_PULL_UP_DOWN]     = { .supported = true, .mode_bits = 0x0, .cnf_bits = 0x2 },
+  [GPIO_OUT_PUSH_PULL]       = { .supported = true, .mode_bits = 0x2, .cnf_bits = 0x0 },
+  [GPIO_OUT_OPEN_DRAIN]      = { .supported = true, .mode_bits = 0x2, .cnf_bits = 0x1 },
+  [GPIO_OUT_ALT_PUSH_PULL]   = { .supported = true, .mode_bits = 0x2, .cnf_bits = 0x2 },
+  [GPIO_OUT_ALT_OPEN_DRAIN]  = { .supported = true, .mode_bits = 0x2, .cnf_bits = 0x3 },
 };
 
 #define GPIO(p) ((GPIO_TypeDef *) (GPIOA_BASE + (uintptr_t)(0x400 * ((p) - 'A'))))
@@ -30,8 +30,8 @@ void hal_gpio_init(void) {
                   RCC_APB2ENR_IOPDEN | RCC_APB2ENR_IOPEEN;
 }
 
-int hal_gpio_configure(hal_gpio_pin_u *pin, hal_gpio_mode_e mode) {
-  if (mode >= HAL_GPIO_MODE_COUNT) return -EINVAL;
+int hal_gpio_configure(gpio_pin_u *pin, gpio_mode_e mode) {
+  if (mode >= GPIO_MODE_COUNT) return -EINVAL;
   if (!gpio_config_map[mode].supported) return -EINVAL;
 
   GPIO_TypeDef *gpio = GPIO(pin->port_pin.port);
@@ -54,20 +54,20 @@ int hal_gpio_configure(hal_gpio_pin_u *pin, hal_gpio_mode_e mode) {
   return 0;
 }
 
-void hal_gpio_write(hal_gpio_pin_u *pin, hal_gpio_state_e state) {
+void hal_gpio_write(gpio_pin_u *pin, gpio_state_e state) {
   GPIO_TypeDef *gpio = GPIO(pin->port_pin.port);
 
-  gpio->BSRR = (uint32_t)(0x1 << pin->port_pin.pin) << (state == HAL_GPIO_HIGH ? 0 : 16);
+  gpio->BSRR = (uint32_t)(0x1 << pin->port_pin.pin) << (state == GPIO_HIGH ? 0 : 16);
 }
 
-hal_gpio_state_e hal_gpio_read(hal_gpio_pin_u *pin) {
+gpio_state_e hal_gpio_read(gpio_pin_u *pin) {
   GPIO_TypeDef *gpio = GPIO(pin->port_pin.port);
 
-  return gpio->IDR & (0x1 << pin->port_pin.pin) ? HAL_GPIO_HIGH : HAL_GPIO_LOW;
+  return gpio->IDR & (0x1 << pin->port_pin.pin) ? GPIO_HIGH : GPIO_LOW;
 };
 
-void hal_gpio_toggle(hal_gpio_pin_u *pin) {
-  hal_gpio_state_e state = hal_gpio_read(pin);
+void hal_gpio_toggle(gpio_pin_u *pin) {
+  gpio_state_e state = hal_gpio_read(pin);
 
-  state == HAL_GPIO_HIGH ? hal_gpio_write(pin, HAL_GPIO_LOW) : hal_gpio_write(pin, HAL_GPIO_HIGH);
+  state == GPIO_HIGH ? hal_gpio_write(pin, GPIO_LOW) : hal_gpio_write(pin, GPIO_HIGH);
 }

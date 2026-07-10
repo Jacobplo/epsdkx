@@ -1,4 +1,5 @@
 rsource "hal/Kconfig"
+rsource "rtos/Kconfig"
 
 config DEBUG
   bool "Enable Debug Features"

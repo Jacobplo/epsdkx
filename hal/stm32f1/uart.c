@@ -29,7 +29,7 @@ typedef struct hal_uart_rx_buffer_s {
 } hal_uart_rx_buffer_s;
 
 typedef struct hal_uart_config_s {
-  hal_uart_pins_s pins;
+  uart_pins_s pins;
   USART_TypeDef *reg;
   hal_nvic_line_device_e irq;
   hal_uart_rx_buffer_s rx_buf;
@@ -63,11 +63,11 @@ static hal_uart_config_s uart_pin_map[UART_CHANNEL_COUNT] = {
 };
 
 
-static void hal_uart_set_baud_rate(hal_uart_channel_t channel, uint32_t baud_rate);
-static void hal_uart_common_isr(hal_uart_channel_t channel);
+static void hal_uart_set_baud_rate(uart_channel_t channel, uint32_t baud_rate);
+static inline void hal_uart_common_isr(uart_channel_t channel);
 
 
-int hal_uart_init(hal_uart_channel_t channel, uint32_t baud_rate) {
+int hal_uart_init(uart_channel_t channel, uint32_t baud_rate) {
   if (channel >= UART_CHANNEL_COUNT) return -EINVAL;
 
   hal_gpio_init();
@@ -75,8 +75,8 @@ int hal_uart_init(hal_uart_channel_t channel, uint32_t baud_rate) {
 
   hal_uart_config_s *cfg = &uart_pin_map[UART_CHANNEL_IDX(channel)]; 
 
-  hal_gpio_configure(&cfg->pins.tx, HAL_GPIO_OUT_ALT_PUSH_PULL);
-  hal_gpio_configure(&cfg->pins.rx, HAL_GPIO_IN);
+  hal_gpio_configure(&cfg->pins.tx, GPIO_OUT_ALT_PUSH_PULL);
+  hal_gpio_configure(&cfg->pins.rx, GPIO_IN);
 
   // Enable clock for UART
   switch(channel) {
@@ -118,13 +118,13 @@ int hal_uart_init(hal_uart_channel_t channel, uint32_t baud_rate) {
   return 0;
 }
 
-const hal_uart_pins_s *hal_uart_get_pins(hal_uart_channel_t channel) {
+const uart_pins_s *hal_uart_get_pins(uart_channel_t channel) {
   if (channel >= UART_CHANNEL_COUNT) return NULL;
 
   return &uart_pin_map[UART_CHANNEL_IDX(channel)].pins;
 }
 
-void hal_uart_putc(hal_uart_channel_t channel, char chr) {
+void hal_uart_putc(uart_channel_t channel, char chr) {
   hal_uart_config_s *cfg = &uart_pin_map[UART_CHANNEL_IDX(channel)];
 
   // Wait until data register is transferred to the transmission shift register.
@@ -134,7 +134,7 @@ void hal_uart_putc(hal_uart_channel_t channel, char chr) {
   cfg->reg->DR = chr;
 }
 
-void hal_uart_write(hal_uart_channel_t channel, const char *str) {
+void hal_uart_write(uart_channel_t channel, const char *str) {
   hal_uart_config_s *cfg = &uart_pin_map[UART_CHANNEL_IDX(channel)]; 
 
   while (*str != '\0') { 
@@ -146,7 +146,7 @@ void hal_uart_write(hal_uart_channel_t channel, const char *str) {
   while(!(cfg->reg->SR & USART_SR_TC)) (void)0;
 }
 
-char hal_uart_getc(hal_uart_channel_t channel) {
+char hal_uart_getc(uart_channel_t channel) {
   hal_uart_config_s *cfg = &uart_pin_map[UART_CHANNEL_IDX(channel)];
 
   // Return EOF if buffer is empty
@@ -160,7 +160,7 @@ char hal_uart_getc(hal_uart_channel_t channel) {
   return chr;
 }
 
-void hal_uart_set_baud_rate(hal_uart_channel_t channel, uint32_t baud_rate) {
+void hal_uart_set_baud_rate(uart_channel_t channel, uint32_t baud_rate) {
   hal_uart_config_s *cfg = &uart_pin_map[UART_CHANNEL_IDX(channel)];
 
   uint32_t prescaler;
@@ -229,7 +229,7 @@ void hal_uart_set_baud_rate(hal_uart_channel_t channel, uint32_t baud_rate) {
                   ((div_fraction << USART_BRR_DIV_Fraction_Pos) & USART_BRR_DIV_Fraction_Msk);
 }
 
-void hal_uart_common_isr(hal_uart_channel_t channel) {
+static inline void hal_uart_common_isr(uart_channel_t channel) {
   hal_uart_config_s *cfg = &uart_pin_map[UART_CHANNEL_IDX(channel)];
 
   // Do not overwrite buffer if it is full
