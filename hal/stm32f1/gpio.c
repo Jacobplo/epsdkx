@@ -7,7 +7,7 @@
 #include "stm32f1xx.h"
 
 
-typedef struct {
+typedef struct hal_gpio_config_s {
   bool supported; 
   uint8_t mode_bits;
   uint8_t cnf_bits;
@@ -23,7 +23,7 @@ static const hal_gpio_config_s gpio_config_map[HAL_GPIO_MODE_COUNT] = {
   [HAL_GPIO_OUT_ALT_OPEN_DRAIN]  = { .supported = true, .mode_bits = 0x2, .cnf_bits = 0x3 },
 };
 
-#define GPIO(port) ((GPIO_TypeDef *) (GPIOA_BASE + (uintptr_t)(0x400 * ((port) - 'A'))))
+#define GPIO(p) ((GPIO_TypeDef *) (GPIOA_BASE + (uintptr_t)(0x400 * ((p) - 'A'))))
 
 void hal_gpio_init(void) {
   RCC->APB2ENR |= RCC_APB2ENR_IOPAEN | RCC_APB2ENR_IOPBEN | RCC_APB2ENR_IOPCEN |

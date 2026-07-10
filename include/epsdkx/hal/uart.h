@@ -7,10 +7,9 @@
 
 
 typedef uint8_t hal_uart_channel_t;
-
 #define UART(n) (hal_uart_channel_t)((n) - 1)
 
-typedef struct {
+typedef struct hal_uart_pins_s {
   hal_gpio_pin_u tx;
   hal_gpio_pin_u rx;
 } hal_uart_pins_s;

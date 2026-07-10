@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 
-typedef union {
+typedef union hal_gpio_pin_u {
   struct {
     uint8_t port;
     uint8_t pin;
@@ -16,7 +16,7 @@ typedef union {
 #define PIN_ID(n)      (hal_gpio_pin_u){ .pin_id = (n) }
 
 // GPIO pin mode 
-typedef enum {
+typedef enum hal_gpio_mode_e {
   // Input
   HAL_GPIO_IN_FLOATING,
   HAL_GPIO_IN_PULL_UP_DOWN,
@@ -35,7 +35,7 @@ typedef enum {
 #define HAL_GPIO_OUT HAL_GPIO_OUT_PUSH_PULL
 
 // GPIO State
-typedef enum {
+typedef enum hal_gpio_state_e {
   HAL_GPIO_LOW,
   HAL_GPIO_HIGH
 } hal_gpio_state_e;

@@ -22,15 +22,15 @@
 
 #define UART_RX_BUFFER_SIZE 64
 
-typedef struct {
+typedef struct hal_uart_rx_buffer_s {
   char data[UART_RX_BUFFER_SIZE];
   uint16_t tail_idx;
   uint16_t head_idx;
-} hal_uart_rx_buffer;
+} hal_uart_rx_buffer_s;
 
-static hal_uart_rx_buffer rx_buf;
+static hal_uart_rx_buffer_s rx_buf;
 
-typedef struct {
+typedef struct hal_uart_config_s {
   hal_uart_pins_s pins;
   USART_TypeDef *reg;
   hal_nvic_line_device irq;
