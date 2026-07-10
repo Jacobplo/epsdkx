@@ -17,7 +17,7 @@ all: setup check build
 
 SDK_ROOT     := $(patsubst %/,%,$(dir $(realpath $(lastword $(MAKEFILE_LIST)))))
 SRC_TREE     := $(patsubst %/,%,$(dir $(realpath $(firstword $(MAKEFILE_LIST)))))
-BOARD_DIR    := $(SDK_ROOT)/bsp/$(FAMILY)/$(BOARD)
+BOARD_DIR    := $(SDK_ROOT)/boards/$(FAMILY)/$(BOARD)
 HAL_DIR      := $(SDK_ROOT)/hal/$(FAMILY)
 DRIVER_DIR   := $(SDK_ROOT)/drivers
 OUTPUT_DIR   := $(CURDIR)
