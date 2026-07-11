@@ -26,21 +26,21 @@ STAMP_DIR    := $(BUILD_DIR)/stamps
 # Build Parameters
 # ================
 
-INCLUDE      := -isystem $(SDK_ROOT)/include \
+INCLUDE      += -isystem $(SDK_ROOT)/include \
                 -isystem $(BUILD_DIR)/include \
                 -isystem $(BOARD_DIR)/include
 
-DEFINE       :=
+DEFINE       +=
 
-SOURCES      :=
-ASM_SOURCES  :=
+SOURCES      +=
+ASM_SOURCES  +=
 src-y        :=
 
-CFLAGS       := -W -Wall -Wextra -Wundef -Wshadow -Wdouble-promotion \
+CFLAGS       += -W -Wall -Wextra -Wundef -Wshadow -Wdouble-promotion \
                 -Wformat-truncation -fno-common -ffunction-sections -fdata-sections \
                 -MD -MP -O2
 
-LDFLAGS      := -lc -lgcc -Wl,--gc-sections -Wl,-Map=$(BUILD_DIR)/firmware.map
+LDFLAGS      += -lc -lgcc -Wl,--gc-sections -Wl,-Map=$(BUILD_DIR)/firmware.map
 
 CHECK_KCONFIG :=
 
