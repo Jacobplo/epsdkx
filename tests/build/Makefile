@@ -1,3 +1,3 @@
 -include $(EPSDKX_ROOT)/Makefile
 
-SOURCES += $(EPSDKX_ROOT)/tests/builds/main.c
+SOURCES += $(EPSDKX_ROOT)/tests/build/main.c
