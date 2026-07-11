@@ -8,6 +8,7 @@
 
 #include <errno.h>
 #include <stdint.h>
+#include <stddef.h>
 
 #include "stm32f103xb.h"
 #include "stm32f1xx.h"
@@ -40,8 +41,8 @@ static hal_spi_config_s spi_pin_map[SPI_CHANNEL_COUNT] = {
     .pins = { 
       .nss  = PORT_PIN('A', 4),
       .sclk = PORT_PIN('A', 5),
-      .mosi = PORT_PIN('A', 6),
-      .miso = PORT_PIN('A', 7),
+      .miso = PORT_PIN('A', 6),
+      .mosi = PORT_PIN('A', 7),
     },
     .reg = SPI1,
     .irq = NVIC_SPI1
@@ -50,8 +51,8 @@ static hal_spi_config_s spi_pin_map[SPI_CHANNEL_COUNT] = {
     .pins = { 
       .nss  = PORT_PIN('B', 12),
       .sclk = PORT_PIN('B', 13),
-      .mosi = PORT_PIN('B', 14),
-      .miso = PORT_PIN('B', 15),
+      .miso = PORT_PIN('B', 14),
+      .mosi = PORT_PIN('B', 15),
     },
     .reg = SPI2,
     .irq = NVIC_SPI2
@@ -62,12 +63,21 @@ static inline void hal_spi_common_isr(spi_channel_t channel);
 
 
 int hal_spi_init(spi_channel_t channel, spi_mode_e mode, spi_cpol_e cpol, spi_cpha_e cpha) {
-  if (channel >= SPI_CHANNEL_COUNT) return -EINVAL;
+  if (SPI_CHANNEL_IDX(channel) >= SPI_CHANNEL_COUNT) return -EINVAL;
 
   hal_gpio_init();
-  hal_dma_init();
 
   hal_spi_config_s *cfg = &spi_pin_map[SPI_CHANNEL_IDX(channel)]; 
+
+  // Enable clock for SPI
+  switch(channel) {
+    case SPI(1):
+      RCC->APB2ENR |= RCC_APB2ENR_SPI1EN;    
+      break;
+    case SPI(2):
+      RCC->APB1ENR |= RCC_APB1ENR_SPI2EN;
+      break;
+  }
 
   // Set 8-bit data width
   cfg->reg->CR1 &= ~(SPI_CR1_DFF);
@@ -82,9 +92,9 @@ int hal_spi_init(spi_channel_t channel, spi_mode_e mode, spi_cpol_e cpol, spi_cp
       hal_gpio_configure(&cfg->pins.mosi, GPIO_OUT_ALT_PUSH_PULL);
       hal_gpio_configure(&cfg->pins.miso, GPIO_IN);
 
-      // Set baud rate to PCLK / 4
+      // Set baud rate to PCLK / 32
       cfg->reg->CR1 &= ~(SPI_CR1_BR);
-      cfg->reg->CR1 |= SPI_CR1_BR_0;
+      cfg->reg->CR1 |= (SPI_CR1_BR_2);
 
       // Set software slave select
       cfg->reg->CR1 |= (SPI_CR1_SSM | SPI_CR1_SSI);
@@ -122,20 +132,7 @@ int hal_spi_init(spi_channel_t channel, spi_mode_e mode, spi_cpol_e cpol, spi_cp
     case SPI_CPHA1:
       cfg->reg->CR1 |= SPI_CR1_CPHA;
       break;
-  }
-
-  // Enable clock for SPI
-  switch(channel) {
-    case SPI(1):
-      RCC->APB2ENR |= RCC_APB2ENR_SPI1EN;    
-      break;
-    case SPI(2):
-      RCC->APB1ENR |= RCC_APB1ENR_SPI2EN;
-      break;
-  }
-
-  // Enable DMA buffers
-  cfg->reg->CR2 |= (SPI_CR2_TXDMAEN | SPI_CR2_RXDMAEN);
+  } 
 
   // Receiver interrupt enable
   hal_nvic_init_device(cfg->irq);
@@ -143,9 +140,13 @@ int hal_spi_init(spi_channel_t channel, spi_mode_e mode, spi_cpol_e cpol, spi_cp
 
   // Set SPI enable
   cfg->reg->CR1 |= SPI_CR1_SPE;
+
+  return 0;
 }
 
 const spi_pins_s *hal_spi_get_pins(spi_channel_t channel) {
+  if (SPI_CHANNEL_IDX(channel) >= SPI_CHANNEL_COUNT) return NULL;
+
   return &spi_pin_map[SPI_CHANNEL_IDX(channel)].pins;
 }
 
@@ -157,19 +158,18 @@ void hal_spi_put(spi_channel_t channel, uint8_t tx) {
   cfg->reg->DR = tx;
 }
 
-uint8_t hal_spi_get(spi_channel_t channel) {
+int hal_spi_get(spi_channel_t channel, uint8_t *rx) {
   hal_spi_config_s *cfg = &spi_pin_map[SPI_CHANNEL_IDX(channel)];
 
-  // Return EOF if buffer is empty
+  // Return if buffer is empty
   if (cfg->rx_buf.tail_idx == cfg->rx_buf.head_idx) {
-    return -1;
+    return -EAGAIN;
   }
 
-  uint8_t val = cfg->rx_buf.data[cfg->rx_buf.tail_idx];
+  *rx = cfg->rx_buf.data[cfg->rx_buf.tail_idx];
   cfg->rx_buf.tail_idx = (cfg->rx_buf.tail_idx + 1) % SPI_RX_BUFFER_SIZE;
 
-  return val;
-
+  return 0;
 }
 
 static inline void hal_spi_common_isr(spi_channel_t channel) {
@@ -181,7 +181,7 @@ static inline void hal_spi_common_isr(spi_channel_t channel) {
     return;
   }
 
-  // Write the buffer
+  // Write to the buffer
   cfg->rx_buf.data[cfg->rx_buf.head_idx] = cfg->reg->DR;
   cfg->rx_buf.head_idx = (cfg->rx_buf.head_idx + 1) % SPI_RX_BUFFER_SIZE;
 }
