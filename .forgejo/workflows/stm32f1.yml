@@ -11,8 +11,9 @@ jobs:
           submodules: recursive
 
       - name: Build all modules
-        working-directory: ./tests/build
+        working-directory: ${{ forgejo.workspace }}/tests/build
         run: |
+          cd ${{ forgejo.workspace }}/tests/build
           export EPSDKX_ROOT="${{ forgejo.workspace }}"
           export FAMILY=stm32f1
           export BOARD=bluepillplus
