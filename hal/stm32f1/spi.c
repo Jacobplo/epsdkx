@@ -153,8 +153,10 @@ const spi_pins_s *hal_spi_get_pins(spi_channel_t channel) {
 void hal_spi_put(spi_channel_t channel, uint8_t tx) {
   hal_spi_config_s *cfg = &spi_pin_map[SPI_CHANNEL_IDX(channel)];
 
+  // Wait until data register is transferred to the transmission shift register.
   while (!(cfg->reg->SR & SPI_SR_TXE)) (void)0;
 
+  // Write to data register
   cfg->reg->DR = tx;
 }
 

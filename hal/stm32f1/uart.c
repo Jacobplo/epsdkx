@@ -22,7 +22,7 @@
 #define UART_RX_BUFFER_SIZE 64
 
 typedef struct hal_uart_rx_buffer_s {
-  char data[UART_RX_BUFFER_SIZE];
+  uint8_t data[UART_RX_BUFFER_SIZE];
   uint16_t tail_idx;
   uint16_t head_idx;
 } hal_uart_rx_buffer_s;
@@ -67,7 +67,7 @@ static inline void hal_uart_common_isr(uart_channel_t channel);
 
 
 int hal_uart_init(uart_channel_t channel, uint32_t baud_rate) {
-  if (channel >= UART_CHANNEL_COUNT) return -EINVAL;
+  if (UART_CHANNEL_IDX(channel) >= UART_CHANNEL_COUNT) return -EINVAL;
 
   hal_gpio_init();
   hal_dma_init();
@@ -118,45 +118,33 @@ int hal_uart_init(uart_channel_t channel, uint32_t baud_rate) {
 }
 
 const uart_pins_s *hal_uart_get_pins(uart_channel_t channel) {
-  if (channel >= UART_CHANNEL_COUNT) return NULL;
+  if (UART_CHANNEL_IDX(channel) >= UART_CHANNEL_COUNT) return NULL;
 
   return &uart_pin_map[UART_CHANNEL_IDX(channel)].pins;
 }
 
-void hal_uart_putc(uart_channel_t channel, char chr) {
+void hal_uart_put(uart_channel_t channel, uint8_t tx) {
   hal_uart_config_s *cfg = &uart_pin_map[UART_CHANNEL_IDX(channel)];
 
   // Wait until data register is transferred to the transmission shift register.
   while (!(cfg->reg->SR & USART_SR_TXE)) (void)0;
 
   // Write to data register
-  cfg->reg->DR = chr;
+  cfg->reg->DR = tx;
 }
 
-void hal_uart_write(uart_channel_t channel, const char *str) {
-  hal_uart_config_s *cfg = &uart_pin_map[UART_CHANNEL_IDX(channel)]; 
-
-  while (*str != '\0') { 
-    hal_uart_putc(channel, *str);
-    str++;
-  }
-
-  // Wait until transmission frame is complete
-  while(!(cfg->reg->SR & USART_SR_TC)) (void)0;
-}
-
-char hal_uart_getc(uart_channel_t channel) {
+int hal_uart_get(uart_channel_t channel, uint8_t *rx) {
   hal_uart_config_s *cfg = &uart_pin_map[UART_CHANNEL_IDX(channel)];
 
-  // Return EOF if buffer is empty
+  // Return if buffer is empty
   if (cfg->rx_buf.tail_idx == cfg->rx_buf.head_idx) {
-    return -1;
+    return -EAGAIN;
   }
 
-  char chr = cfg->rx_buf.data[cfg->rx_buf.tail_idx];
+  *rx = cfg->rx_buf.data[cfg->rx_buf.tail_idx];
   cfg->rx_buf.tail_idx = (cfg->rx_buf.tail_idx + 1) % UART_RX_BUFFER_SIZE;
 
-  return chr;
+  return 0;
 }
 
 void hal_uart_set_baud_rate(uart_channel_t channel, uint32_t baud_rate) {
@@ -237,7 +225,7 @@ static inline void hal_uart_common_isr(uart_channel_t channel) {
     return;
   }
 
-  // Write the buffer
+  // Write to the buffer
   cfg->rx_buf.data[cfg->rx_buf.head_idx] = cfg->reg->DR;
   cfg->rx_buf.head_idx = (cfg->rx_buf.head_idx + 1) % UART_RX_BUFFER_SIZE;
 }

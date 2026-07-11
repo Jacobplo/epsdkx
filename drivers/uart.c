@@ -12,14 +12,17 @@ const uart_pins_s *uart_get_pins(uart_channel_t channel) {
   return hal_uart_get_pins(channel);
 }
 
-void uart_putc(uart_channel_t channel, char chr) {
-  hal_uart_putc(channel, chr);
+void uart_put(uart_channel_t channel, uint8_t tx) {
+  hal_uart_put(channel, tx);
+}
+
+int uart_get(uart_channel_t channel, uint8_t *rx) {
+  return hal_uart_get(channel, rx);
 }
 
 void uart_write(uart_channel_t channel, const char *str) {
-  hal_uart_write(channel, str);
-}
-
-char uart_getc(uart_channel_t channel) {
-  return hal_uart_getc(channel);
+  while (*str != '\0') { 
+    hal_uart_put(channel, *str);
+    str++;
+  }
 }
