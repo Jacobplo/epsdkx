@@ -1,13 +1,6 @@
 name: STM32F1
 on: [push]
 
-env:
-  EPSDKX_ROOT: ${{ forgejo.workspace }}
-  FAMILY: stm32f1
-  BOARD: bluepillplus
-  CC: arm-none-eabi-gcc
-  OBJCOPY: arm-none-eabi-objcopy
-
 jobs:
   Build:
     runs-on: native
@@ -23,7 +16,13 @@ jobs:
 
       - name: Build all modules
         working-directory: ./tests/build
-        run: make all
+        run: |
+          export EPSDKX_ROOT="${{ forgejo.workspace }}"
+          export FAMILY=stm32f1
+          export BOARD=bluepillplus
+          export CC=arm-none-eabi-gcc
+          export OBJCOPY=arm-none-eabi-objcopy
+          make all
 
   StaticAnalysis:
     runs-on: native
