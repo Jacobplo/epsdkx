@@ -69,17 +69,7 @@ typedef enum hal_nvic_line_device_e {
 } hal_nvic_line_device_e;
 
 static inline void hal_nvic_init_device(hal_nvic_line_device_e dev) {
-  uint8_t iser_bit = 0x1 << (dev % 32u);
-
-  if (dev < 32) {
-    NVIC->ISER[0] |= iser_bit;
-  } 
-  else if (dev < 64) {
-    NVIC->ISER[1] |= iser_bit;
-  }
-  else {
-    NVIC->ISER[2] |= iser_bit;
-  };
+  NVIC->ISER[dev / 32] |= (0x1 << (dev % 32u));
 }
 
 #endif
