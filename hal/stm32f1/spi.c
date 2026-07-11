@@ -65,8 +65,6 @@ static inline void hal_spi_common_isr(spi_channel_t channel);
 int hal_spi_init(spi_channel_t channel, spi_mode_e mode, spi_cpol_e cpol, spi_cpha_e cpha) {
   if (SPI_CHANNEL_IDX(channel) >= SPI_CHANNEL_COUNT) return -EINVAL;
 
-  hal_gpio_init();
-
   hal_spi_config_s *cfg = &spi_pin_map[SPI_CHANNEL_IDX(channel)]; 
 
   // Enable clock for SPI
@@ -78,6 +76,8 @@ int hal_spi_init(spi_channel_t channel, spi_mode_e mode, spi_cpol_e cpol, spi_cp
       RCC->APB1ENR |= RCC_APB1ENR_SPI2EN;
       break;
   }
+
+  hal_gpio_init();
 
   // Set 8-bit data width
   cfg->reg->CR1 &= ~(SPI_CR1_DFF);

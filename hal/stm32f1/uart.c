@@ -69,13 +69,7 @@ static inline void hal_uart_common_isr(uart_channel_t channel);
 int hal_uart_init(uart_channel_t channel, uint32_t baud_rate) {
   if (UART_CHANNEL_IDX(channel) >= UART_CHANNEL_COUNT) return -EINVAL;
 
-  hal_gpio_init();
-  hal_dma_init();
-
   hal_uart_config_s *cfg = &uart_pin_map[UART_CHANNEL_IDX(channel)]; 
-
-  hal_gpio_configure(&cfg->pins.tx, GPIO_OUT_ALT_PUSH_PULL);
-  hal_gpio_configure(&cfg->pins.rx, GPIO_IN);
 
   // Enable clock for UART
   switch(channel) {
@@ -90,8 +84,9 @@ int hal_uart_init(uart_channel_t channel, uint32_t baud_rate) {
       break;
   }
 
-  // UART enable
-  cfg->reg->CR1 |= USART_CR1_UE;
+  hal_gpio_init();
+  hal_gpio_configure(&cfg->pins.tx, GPIO_OUT_ALT_PUSH_PULL);
+  hal_gpio_configure(&cfg->pins.rx, GPIO_IN); 
 
   // Select 8-bit word length
   cfg->reg->CR1 &= ~(USART_CR1_M);
@@ -99,9 +94,6 @@ int hal_uart_init(uart_channel_t channel, uint32_t baud_rate) {
   // Select 1 stop bit
   cfg->reg->CR2 &= ~(USART_CR2_STOP);
 
-  // DMA enable transmitter and receiver
-  // cfg.reg->CR3 |= USART_CR3_DMAT | USART_CR3_DMAR;
-  
   hal_uart_set_baud_rate(channel, baud_rate);
 
   // Transmitter enable
@@ -113,6 +105,9 @@ int hal_uart_init(uart_channel_t channel, uint32_t baud_rate) {
   // Receiver interrupt enable
   hal_nvic_init_device(cfg->irq);
   cfg->reg->CR1 |= USART_CR1_RXNEIE;
+
+  // UART enable
+  cfg->reg->CR1 |= USART_CR1_UE;
   
   return 0;
 }
