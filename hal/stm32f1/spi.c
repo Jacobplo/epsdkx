@@ -23,7 +23,7 @@
 
 #define SPI_RX_BUFFER_SIZE 64
 
-typedef struct hal_spi_rx_buffer_s {
+typedef volatile struct hal_spi_rx_buffer_s {
   uint8_t data[SPI_RX_BUFFER_SIZE];
   uint16_t tail_idx;
   uint16_t head_idx;
