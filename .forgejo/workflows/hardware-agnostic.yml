@@ -1,9 +1,6 @@
 name: HardwareAgnostic
 on: [push]
 
-env:
-  EPSDKX_ROOT: ${{ forgejo.workspace }}
-
 jobs:
   StaticAnalysis:
     runs-on: native

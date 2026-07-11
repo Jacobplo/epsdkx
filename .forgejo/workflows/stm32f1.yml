@@ -8,13 +8,18 @@ env:
   CC: arm-none-eabi-gcc
   OBJCOPY: arm-none-eabi-objcopy
 
-
 jobs:
   Build:
     runs-on: native
     steps:
       - name: Clone the repository
         uses: https://data.forgejo.org/actions/checkout@v6
+
+      - name: Debug
+        run: |
+          echo "PROJECT_ROOT=$PROJECT_ROOT"
+          echo "workspace=${{ forgejo.workspace }}"
+          env | sort
 
       - name: Build all modules
         working-directory: ./tests/build
