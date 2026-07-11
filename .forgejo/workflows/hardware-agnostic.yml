@@ -1,0 +1,15 @@
+name: HardwareAgnostic
+on: [push]
+
+env:
+  EPSDKX_ROOT: ${{ forgejo.workspace }}
+
+jobs:
+  StaticAnalysis:
+    runs-on: native
+    steps: 
+      - name: Clone the repository
+        run: actions/checkout@v6
+
+      - name: Run static analysis on driver code
+        run: cppcheck --max-ctu-depth=10 ${{ forgejo.workspace }}/drivers

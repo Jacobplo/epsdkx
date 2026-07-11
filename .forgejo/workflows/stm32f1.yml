@@ -1,0 +1,32 @@
+name: STM32F1
+on: [push]
+
+env:
+  EPSDKX_ROOT: ${{ forgejo.workspace }}
+  FAMILY: stm32f1
+  BOARD: bluepillplus
+  CC: arm-none-eabi-gcc
+  OBJCOPY: arm-none-eabi-objcopy
+
+
+jobs:
+  Build:
+    runs-on: native
+    steps:
+      - name: Clone the repository
+        run: actions/checkout@v6
+
+      - name: Enter the build directory
+        run: cd ${{ forgejo.workspace }}/tests/build
+
+      - name: Build all modules
+        run: make all
+
+  StaticAnalysis:
+    runs-on: native
+    steps: 
+      - name: Clone the repository
+        run: actions/checkout@v6
+
+      - name: Run static analysis on HAL code
+        run: cppcheck --max-ctu-depth=10 ${{ forgejo.workspace }}/hal
