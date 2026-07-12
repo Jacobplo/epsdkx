@@ -3,7 +3,6 @@
 
 #include <epsdkx/hal/gpio.h>
 #include <epsdkx/generated/config.h>
-#include "private/dma.h"
 #include "private/nvic.h"
 
 #include <errno.h>
