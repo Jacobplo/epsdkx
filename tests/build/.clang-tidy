@@ -1,0 +1,8 @@
+Checks: >
+  -*,
+  clang-analyzer-*,
+  -clang-analyzer-core.FixedAddressDereference,
+  bug-prone-*,
+  cert-*,
+  performance-*,
+  -performance-no-int-to-ptr
