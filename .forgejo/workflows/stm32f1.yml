@@ -35,4 +35,4 @@ jobs:
         working-directory: ${{ forgejo.workspace }}/tests/build
         run: |
           make compile_commands.json
-          find ${{ forgejo.workspace }}/hal -type f -name "*.c" -print0 | xargs -0 clang-tidy
+          find ${{ forgejo.workspace }}/hal -type f -name "*.c" -print0 | xargs -0 clang-tidy -p .
