@@ -29,10 +29,11 @@ jobs:
           submodules: recursive
 
       - name: Run cppcheck on HAL sources
-        run: cppcheck --max-ctu-depth=10 ${{ forgejo.workspace }}/hal
+        run: cppcheck --max-ctu-depth=10 ${{ forgejo.workspace }}/hal/${{ env.FAMILY }}
 
       - name: Run clang-tidy on HAL sources
         working-directory: ${{ forgejo.workspace }}/tests/build
         run: |
           make compile_commands.json
-          find ${{ forgejo.workspace }}/hal -type f -name "*.c" -print0 | xargs -0 clang-tidy -p .
+          find ${{ forgejo.workspace }}/hal/${{ env.FAMILY }} ${{ forgejo.workspace }}/boards/${{ env.FAMILY }} -type f -name "*.c" -print0 \
+            | xargs -0 clang-tidy -p .
