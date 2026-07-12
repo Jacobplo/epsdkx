@@ -8,5 +8,5 @@ jobs:
       - name: Clone the repository
         uses: https://data.forgejo.org/actions/checkout@v6
 
-      - name: Run static analysis on driver code
+      - name: Run cppcheck on driver sources
         run: cppcheck --max-ctu-depth=10 ${{ forgejo.workspace }}/drivers

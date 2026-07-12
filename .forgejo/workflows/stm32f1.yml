@@ -1,6 +1,12 @@
 name: STM32F1
 on: [push]
 
+env:
+  FAMILY: stm32f1
+  BOARD: bluepillplus
+  CC: arm-none-eabi-gcc
+  OBJCOPY: arm-none-eabi-objcopy
+
 jobs:
   Build:
     runs-on: native
@@ -13,11 +19,7 @@ jobs:
       - name: Build all modules
         working-directory: ${{ forgejo.workspace }}/tests/build
         run: |
-          export EPSDKX_ROOT="${{ forgejo.workspace }}"
-          export FAMILY=stm32f1
-          export BOARD=bluepillplus
-          export CC=arm-none-eabi-gcc
-          export OBJCOPY=arm-none-eabi-objcopy
+          
           make all
 
   StaticAnalysis:
@@ -26,5 +28,11 @@ jobs:
       - name: Clone the repository
         uses: https://data.forgejo.org/actions/checkout@v6
 
-      - name: Run static analysis on HAL code
+      - name: Run cppcheck on HAL sources
         run: cppcheck --max-ctu-depth=10 ${{ forgejo.workspace }}/hal
+
+      - name: Run clang-tidy on HAL sources
+        working-directory: ${{ forgejo.workspace }}/tests/build
+        run: |
+          make compile_commands.json
+          find ${{ forgejo.workspace }}/hal -type f -name "*.c" -print0 | xargs -0 clang-tidy
