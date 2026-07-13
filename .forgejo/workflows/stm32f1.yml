@@ -31,7 +31,7 @@ jobs:
       - name: Run cppcheck on platform sources
         run: |
           find ${{ forgejo.workspace }}/hal/${{ env.FAMILY }} ${{ forgejo.workspace }}/boards/${{ env.FAMILY }} \( -name "*.c" -o -name "*.h" \) -print0 \
-            | xargs -0 cppcheck--max-ctu-depth=10 
+            | xargs -0 cppcheck --max-ctu-depth=10 
 
       - name: Run clang-tidy on platform sources
         working-directory: ${{ forgejo.workspace }}/tests/build

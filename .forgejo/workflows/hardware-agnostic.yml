@@ -11,7 +11,7 @@ jobs:
       - name: Run cppcheck on hardware agnostic sources
         run: |
           find ${{ forgejo.workspace }}/drivers ${{ forgejo.workspace }}/include \( -name "*.c" -o -name "*.h" \) -print0 \
-            | xargs -0 cppcheck--max-ctu-depth=10 
+            | xargs -0 cppcheck --max-ctu-depth=10 
 
       - name: Run clang-tidy on hardware agnostic sources
         run: |
