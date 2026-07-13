@@ -1,0 +1,3 @@
+config STM32F1_I2C_CCR
+  hex
+  default 0x801e

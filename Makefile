@@ -52,6 +52,7 @@ export KCONFIG_CONFIG     := $(BUILD_DIR)/.config
 export KCONFIG_AUTOHEADER := $(GEN_INC_DIR)/config.h
 export srctree            := $(SRC_TREE)
 export FAMILY             := $(FAMILY)
+export BOARD              := $(BOARD)
 
 KCONFIGS := $(shell find $(SDK_ROOT) -name "Kconfig")
 

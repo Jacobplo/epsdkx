@@ -15,6 +15,11 @@ config SPI
 config PLATFORM_SUPPORTS_SPI
   bool
 
+config I2C
+  bool "Enable I2C Driver"
+config PLATFORM_SUPPORTS_I2C
+  bool
+
 config USB
   bool "Enable USB Driver"
 config PLATFORM_SUPPORTS_USB
