@@ -3,7 +3,7 @@ INCLUDE      += -I$(SDK_ROOT)/external/cmsis-device-f1/Include \
 
 DEFINE       += -DSTM32F103xB
 
-SOURCES      += $(BOARD_DIR)/sysinit.c
+SOURCES      += $(BOARD_DIR)/board.c
 ASM_SOURCES  += $(BOARD_DIR)/startup.s
 
 CFLAGS       += -mcpu=cortex-m3 -mthumb

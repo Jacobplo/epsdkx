@@ -1,7 +1,8 @@
+#include <epsdkx/board.h>
+
 #include <stdint.h>
 
 #include "stm32f1xx.h"
-#include "system_stm32f1xx.h"
 
 uint32_t SystemCoreClock;
 
