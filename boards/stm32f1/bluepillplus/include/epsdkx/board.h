@@ -1,7 +1,7 @@
 #ifndef _EPSDKX_BOARD_H
 #define _EPSDKX_BOARD_H
 
-#include <epsdkx/hal/gpio.h>
+#include <epsdkx/common/gpio.h>
 
 
 #define PIN(p, n)           PORT_PIN((p), (n))
