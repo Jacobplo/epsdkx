@@ -99,7 +99,7 @@ int hal_spi_init(spi_channel_t channel, spi_mode_e mode, spi_cpol_e cpol, spi_cp
       hal_gpio_configure(&cfg->pins.nss, GPIO_IN);
       hal_gpio_configure(&cfg->pins.sclk, GPIO_IN);
       hal_gpio_configure(&cfg->pins.mosi, GPIO_IN);
-      hal_gpio_configure(&cfg->pins.miso, GPIO_OUT_ALT_PUSH_PULL);
+      hal_gpio_configure(&cfg->pins.miso, GPIO_OUT_ALT_OPEN_DRAIN);
 
       // Set slave mode
       cfg->reg->CR1 &= ~(SPI_CR1_MSTR);
