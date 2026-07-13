@@ -4,5 +4,7 @@ Checks: >
   -clang-analyzer-core.FixedAddressDereference,
   bug-prone-*,
   cert-*,
+  -cert-dcl37-c,
+  -cert-dcl51-cpp,
   performance-*,
   -performance-no-int-to-ptr

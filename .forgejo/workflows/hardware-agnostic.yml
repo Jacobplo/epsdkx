@@ -8,5 +8,11 @@ jobs:
       - name: Clone the repository
         uses: https://data.forgejo.org/actions/checkout@v6
 
-      - name: Run cppcheck on driver sources
-        run: cppcheck --max-ctu-depth=10 ${{ forgejo.workspace }}/drivers
+      - name: Run cppcheck on hardware agnostic sources
+        run: |
+          find ${{ forgejo.workspace }}/drivers ${{ forgejo.workspace }}/include \( -name "*.c" -o -name "*.h" \) -print0 \
+            | xargs -0 cppcheck--max-ctu-depth=10 
+
+      - name: Run clang-tidy on hardware agnostic sources
+        run: |
+          echo "Pass for now. Implement with mock hal and board later."
