@@ -3,6 +3,7 @@
 #include <epsdkx/hal/gpio.h>
 #include <epsdkx/generated/config.h>
 #include "private/nvic.h"
+#include "private/rx_buffer.h"
 
 #include <stdint.h>
 #include <errno.h>
@@ -18,19 +19,11 @@
 #define UART_CHANNEL_IDX(n) ((n) - 1)
 #define UART_CHANNEL_COUNT  3
 
-#define UART_RX_BUFFER_SIZE 64
-
-typedef volatile struct hal_uart_rx_buffer_s {
-  uint8_t data[UART_RX_BUFFER_SIZE];
-  uint16_t tail_idx;
-  uint16_t head_idx;
-} hal_uart_rx_buffer_s;
-
 typedef struct hal_uart_config_s {
   uart_pins_s pins;
   USART_TypeDef *reg;
   hal_nvic_line_device_e irq;
-  hal_uart_rx_buffer_s rx_buf;
+  hal_rx_buffer_s rx_buf;
 } hal_uart_config_s;
 
 static hal_uart_config_s uart_pin_map[UART_CHANNEL_COUNT] = {
@@ -130,15 +123,7 @@ void hal_uart_put(uart_channel_t channel, uint8_t tx) {
 int hal_uart_get(uart_channel_t channel, uint8_t *rx) {
   hal_uart_config_s *cfg = &uart_pin_map[UART_CHANNEL_IDX(channel)];
 
-  // Return if buffer is empty
-  if (cfg->rx_buf.tail_idx == cfg->rx_buf.head_idx) {
-    return -EAGAIN;
-  }
-
-  *rx = cfg->rx_buf.data[cfg->rx_buf.tail_idx];
-  cfg->rx_buf.tail_idx = (cfg->rx_buf.tail_idx + 1) % UART_RX_BUFFER_SIZE;
-
-  return 0;
+  return hal_rx_buffer_get(&cfg->rx_buf, rx);
 }
 
 void hal_uart_set_baud_rate(uart_channel_t channel, uint32_t baud_rate) {
@@ -213,15 +198,7 @@ void hal_uart_set_baud_rate(uart_channel_t channel, uint32_t baud_rate) {
 static inline void hal_uart_common_isr(uart_channel_t channel) {
   hal_uart_config_s *cfg = &uart_pin_map[UART_CHANNEL_IDX(channel)];
 
-  // Do not overwrite buffer if it is full
-  if ((cfg->rx_buf.head_idx + 1) % UART_RX_BUFFER_SIZE == cfg->rx_buf.tail_idx) {
-    cfg->reg->DR;
-    return;
-  }
-
-  // Write to the buffer
-  cfg->rx_buf.data[cfg->rx_buf.head_idx] = cfg->reg->DR;
-  cfg->rx_buf.head_idx = (cfg->rx_buf.head_idx + 1) % UART_RX_BUFFER_SIZE;
+  hal_rx_buffer_put(&cfg->rx_buf, cfg->reg->DR);
 }
 
 void USART1_IRQHandler() {

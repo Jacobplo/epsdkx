@@ -4,6 +4,7 @@
 #include <epsdkx/hal/gpio.h>
 #include <epsdkx/generated/config.h>
 #include "private/nvic.h"
+#include "private/rx_buffer.h"
 
 #include <errno.h>
 #include <stdint.h>
@@ -20,19 +21,11 @@
 #define SPI_CHANNEL_IDX(n) ((n) - 1)
 #define SPI_CHANNEL_COUNT  2
 
-#define SPI_RX_BUFFER_SIZE 64
-
-typedef volatile struct hal_spi_rx_buffer_s {
-  uint8_t data[SPI_RX_BUFFER_SIZE];
-  uint16_t tail_idx;
-  uint16_t head_idx;
-} hal_spi_rx_buffer_s;
-
 typedef struct hal_spi_config_s {
   spi_pins_s pins;
   SPI_TypeDef *reg;
   hal_nvic_line_device_e irq;
-  hal_spi_rx_buffer_s rx_buf;
+  hal_rx_buffer_s rx_buf;
 } hal_spi_config_s;
 
 static hal_spi_config_s spi_pin_map[SPI_CHANNEL_COUNT] = {
@@ -162,29 +155,13 @@ void hal_spi_put(spi_channel_t channel, uint8_t tx) {
 int hal_spi_get(spi_channel_t channel, uint8_t *rx) {
   hal_spi_config_s *cfg = &spi_pin_map[SPI_CHANNEL_IDX(channel)];
 
-  // Return if buffer is empty
-  if (cfg->rx_buf.tail_idx == cfg->rx_buf.head_idx) {
-    return -EAGAIN;
-  }
-
-  *rx = cfg->rx_buf.data[cfg->rx_buf.tail_idx];
-  cfg->rx_buf.tail_idx = (cfg->rx_buf.tail_idx + 1) % SPI_RX_BUFFER_SIZE;
-
-  return 0;
+  return hal_rx_buffer_get(&cfg->rx_buf, rx);
 }
 
 static inline void hal_spi_common_isr(spi_channel_t channel) {
   hal_spi_config_s *cfg = &spi_pin_map[SPI_CHANNEL_IDX(channel)];
 
-  // Do not overwrite buffer if it is full
-  if ((cfg->rx_buf.head_idx + 1) % SPI_RX_BUFFER_SIZE == cfg->rx_buf.tail_idx) {
-    cfg->reg->DR;
-    return;
-  }
-
-  // Write to the buffer
-  cfg->rx_buf.data[cfg->rx_buf.head_idx] = cfg->reg->DR;
-  cfg->rx_buf.head_idx = (cfg->rx_buf.head_idx + 1) % SPI_RX_BUFFER_SIZE;
+  hal_rx_buffer_put(&cfg->rx_buf, cfg->reg->DR);
 }
 
 
