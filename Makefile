@@ -1,9 +1,3 @@
-FAMILY  := stm32f1
-BOARD   := bluepillplus
-CC      := arm-none-eabi-gcc
-OBJCOPY := arm-none-eabi-objcopy
-SOURCES := main.c
-
 # ==============
 # Default Target
 # ==============

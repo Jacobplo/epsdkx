@@ -46,7 +46,6 @@ typedef struct hal_i2c_config_s {
   hal_nvic_line_device_e irq;
 
   bool send;
-
   hal_i2c_data_s data;
 } hal_i2c_config_s;
 
@@ -160,6 +159,29 @@ int hal_i2c_putn(i2c_channel_t channel, uint16_t slave_address, uint8_t *tx, uin
   return 0;
 }
 
+int hal_i2c_getn(i2c_channel_t master, i2c_channel_t slave, uint16_t slave_address, uint8_t *tx, uint16_t n) {
+  if (I2C_CHANNEL_IDX(master) >= I2C_CHANNEL_COUNT) return -EINVAL;
+  if (I2C_CHANNEL_IDX(slave) >= I2C_CHANNEL_COUNT) return -EINVAL;
+
+  hal_i2c_config_s *m_cfg = &i2c_pin_map[I2C_CHANNEL_IDX(master)];
+  hal_i2c_config_s *s_cfg = &i2c_pin_map[I2C_CHANNEL_IDX(slave)];
+
+  // Previous transmission not yet completed
+  if (s_cfg->data.i < s_cfg->data.n) return -EBUSY;
+
+  s_cfg->data.tx = tx;
+  s_cfg->data.i = 0;
+  s_cfg->data.n = n;
+  s_cfg->send = true;
+
+  m_cfg->data.i = 0;
+  m_cfg->data.n = n;
+  m_cfg->send = false;
+  m_cfg->data.target = (slave_address << 1u) | 0x1;
+
+  m_cfg->reg->CR1 |= I2C_CR1_START;
+}
+
 int hal_i2c_get(i2c_channel_t channel, uint8_t *rx) {
   if (I2C_CHANNEL_IDX(channel) >= I2C_CHANNEL_COUNT) return -EINVAL;
 
@@ -178,40 +200,40 @@ static inline void hal_i2c_common_isr(i2c_channel_t channel) {
 
   // Address acknowledged
   else if (cfg->reg->SR1 & I2C_SR1_ADDR) { 
-    // Master mode
-    if (cfg->reg->SR2 & I2C_SR2_MSL) {
-      // Send
-      if (cfg->send) {
-        cfg->reg->DR = cfg->data.tx[cfg->data.i++];
-        cfg->send = false;
+    // Receiver (master)
+    if (cfg->reg->SR2 & I2C_SR2_MSL && !cfg->send) { 
+      cfg->reg->CR1 |= I2C_CR1_ACK;
+      // Generate NACK and STOP if only one byte is being transmitted
+      if (cfg->data.n == 1) {
+        cfg->reg->CR1 &= ~(I2C_CR1_ACK);
+        cfg->reg->CR1 |= I2C_CR1_STOP;
       }
-
-      // Receive
-      else {
-        cfg->reg->CR1 |= I2C_CR1_ACK;
-        // Generate NACK and STOP if only one byte is being transmitted
-        if (cfg->data.n == 1) {
-          cfg->reg->CR1 &= ~(I2C_CR1_ACK);
-          cfg->reg->CR1 |= I2C_CR1_STOP;
-        }
-      }
+    }
+    // Transmitter (master / slave)
+    else {
+      cfg->reg->DR = cfg->data.tx[cfg->data.i++];
+      cfg->send = false;
     }
   }
 
   // Data register empty (transmitter)
   else if (cfg->reg->SR1 & I2C_SR1_TXE) {
+    // Transmit data (master / slave)
     if (cfg->data.i < cfg->data.n) {
       cfg->reg->DR = cfg->data.tx[cfg->data.i++];
     } 
-    else if (cfg->reg->SR1 & I2C_SR1_BTF) {
+    // Send STOP signal (master)
+    else if (cfg->mode == I2C_MASTER && cfg->reg->SR1 & I2C_SR1_BTF) {
       cfg->reg->CR1 |= I2C_CR1_STOP;
     }
   }
 
   // Data register not empty (receiver)
   else if (cfg->reg->SR1 & I2C_SR1_RXNE) {
+    // Receive data into RX buffer (master / slave)
     hal_rx_buffer_put(&cfg->data.rx_buf, cfg->reg->DR);
-    // Generate NACK and STOP after receiving the second to last byte
+
+    // Generate NACK and STOP after receiving the second to last byte (master)
     if (cfg->mode == I2C_MASTER && (++cfg->data.i == cfg->data.n - 1)) {
       cfg->reg->CR1 &= ~(I2C_CR1_ACK);
       cfg->reg->CR1 |= I2C_CR1_STOP;
