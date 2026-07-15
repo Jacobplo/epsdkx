@@ -18,7 +18,7 @@ static inline int hal_i2c_init_slave(i2c_channel_t channel, uint16_t address) {
 
 const i2c_pins_s *hal_i2c_get_pins(i2c_channel_t channel);
 
-int hal_i2c_put(i2c_channel_t channel, uint8_t tx);
+int hal_i2c_putn(i2c_channel_t channel, uint16_t slave_address, uint8_t *tx, uint16_t n);
 
 int hal_i2c_get(i2c_channel_t channel, uint8_t *rx);
 
