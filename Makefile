@@ -38,7 +38,7 @@ src-y        :=
 
 CFLAGS       += -W -Wall -Wextra -Wundef -Wshadow -Wdouble-promotion \
                 -Wformat-truncation -fno-common -ffunction-sections -fdata-sections \
-                -MD -MP -O2
+                -MD -MP -Os
 
 LDFLAGS      += -lc -lgcc -Wl,--gc-sections -Wl,-Map=$(BUILD_DIR)/firmware.map
 
@@ -61,7 +61,7 @@ ifeq ($(filter clean, $(MAKECMDGOALS)),)
 endif
 
 ifeq ($(CONFIG_DEBUG),y)
-CFLAGS += -g3
+CFLAGS += -g3 -Og
 endif
 
 # =================
