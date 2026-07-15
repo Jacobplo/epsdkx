@@ -138,7 +138,7 @@ int hal_i2c_putn(i2c_channel_t channel, uint16_t slave_address, uint8_t *tx, uin
   hal_i2c_config_s *cfg = &i2c_pin_map[I2C_CHANNEL_IDX(channel)];
 
   // Previous transmission not yet completed
-  if (cfg->data.i < cfg->data.n) return -EBUSY;
+  if (cfg->reg->SR2 & I2C_SR2_BUSY) return -EBUSY;
 
   cfg->data.tx = tx;
   cfg->data.i = 0;
@@ -167,7 +167,7 @@ int hal_i2c_getn(i2c_channel_t master, i2c_channel_t slave, uint16_t slave_addre
   hal_i2c_config_s *s_cfg = &i2c_pin_map[I2C_CHANNEL_IDX(slave)];
 
   // Previous transmission not yet completed
-  if (s_cfg->data.i < s_cfg->data.n) return -EBUSY;
+  if (m_cfg->reg->SR2 & I2C_SR2_BUSY) return -EBUSY;
 
   s_cfg->data.tx = tx;
   s_cfg->data.i = 0;
@@ -180,6 +180,8 @@ int hal_i2c_getn(i2c_channel_t master, i2c_channel_t slave, uint16_t slave_addre
   m_cfg->data.target = (slave_address << 1u) | 0x1;
 
   m_cfg->reg->CR1 |= I2C_CR1_START;
+
+  return 0;
 }
 
 int hal_i2c_get(i2c_channel_t channel, uint8_t *rx) {
