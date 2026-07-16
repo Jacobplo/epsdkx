@@ -65,9 +65,3 @@ gpio_state_e hal_gpio_read(gpio_pin_u *pin) {
 
   return gpio->IDR & (0x1 << pin->port_pin.pin) ? GPIO_HIGH : GPIO_LOW;
 };
-
-void hal_gpio_toggle(gpio_pin_u *pin) {
-  gpio_state_e state = hal_gpio_read(pin);
-
-  state == GPIO_HIGH ? hal_gpio_write(pin, GPIO_LOW) : hal_gpio_write(pin, GPIO_HIGH);
-}

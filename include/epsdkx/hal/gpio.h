@@ -11,6 +11,4 @@ void hal_gpio_write(gpio_pin_u *pin, gpio_state_e state);
 
 gpio_state_e hal_gpio_read(gpio_pin_u *pin);
 
-void hal_gpio_toggle(gpio_pin_u *pin);
-
 #endif
