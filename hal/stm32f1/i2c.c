@@ -132,7 +132,7 @@ const i2c_pins_s *hal_i2c_get_pins(i2c_channel_t channel) {
   return &i2c_pin_map[I2C_CHANNEL_IDX(channel)].pins;
 }
 
-int hal_i2c_putn(i2c_channel_t channel, uint16_t slave_address, uint8_t *tx, uint16_t n) {
+int hal_i2c_putn(i2c_channel_t channel, uint8_t *tx, uint16_t n, uint16_t slave_address) {
   if (I2C_CHANNEL_IDX(channel) >= I2C_CHANNEL_COUNT) return -EINVAL;
 
   hal_i2c_config_s *cfg = &i2c_pin_map[I2C_CHANNEL_IDX(channel)];
@@ -145,41 +145,29 @@ int hal_i2c_putn(i2c_channel_t channel, uint16_t slave_address, uint8_t *tx, uin
   cfg->data.n = n;
   cfg->send = true;
 
-  switch (cfg->mode) {
-    case I2C_SLAVE:
-      break;
-    case I2C_MASTER: 
-      cfg->data.target = (slave_address << 1u);
-
-      // Send start condition
-      cfg->reg->CR1 |= I2C_CR1_START;
-      break;
+  if (cfg->mode == I2C_MASTER) {
+    cfg->data.target = (slave_address << 1u);
+    cfg->reg->CR1 |= I2C_CR1_START;
   }
 
   return 0;
 }
 
-int hal_i2c_getn(i2c_channel_t master, i2c_channel_t slave, uint16_t slave_address, uint8_t *tx, uint16_t n) {
+int hal_i2c_getn(i2c_channel_t master, uint8_t *tx, uint16_t n, uint16_t slave_address) {
   if (I2C_CHANNEL_IDX(master) >= I2C_CHANNEL_COUNT) return -EINVAL;
-  if (I2C_CHANNEL_IDX(slave) >= I2C_CHANNEL_COUNT) return -EINVAL;
 
-  hal_i2c_config_s *m_cfg = &i2c_pin_map[I2C_CHANNEL_IDX(master)];
-  hal_i2c_config_s *s_cfg = &i2c_pin_map[I2C_CHANNEL_IDX(slave)];
+  hal_i2c_config_s *cfg = &i2c_pin_map[I2C_CHANNEL_IDX(master)];
 
   // Previous transmission not yet completed
-  if (m_cfg->reg->SR2 & I2C_SR2_BUSY) return -EBUSY;
+  if (cfg->reg->SR2 & I2C_SR2_BUSY) return -EBUSY;
 
-  s_cfg->data.tx = tx;
-  s_cfg->data.i = 0;
-  s_cfg->data.n = n;
-  s_cfg->send = true;
+  cfg->data.i = 0;
+  cfg->data.n = n;
+  cfg->data.tx = tx;
+  cfg->send = false;
 
-  m_cfg->data.i = 0;
-  m_cfg->data.n = n;
-  m_cfg->send = false;
-  m_cfg->data.target = (slave_address << 1u) | 0x1;
-
-  m_cfg->reg->CR1 |= I2C_CR1_START;
+  cfg->data.target = (slave_address << 1u) | 0x1;
+  cfg->reg->CR1 |= I2C_CR1_START;
 
   return 0;
 }
