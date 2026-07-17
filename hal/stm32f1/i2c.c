@@ -43,7 +43,8 @@ typedef struct hal_i2c_config_s {
   i2c_pins_s pins;
   I2C_TypeDef *reg;
   i2c_mode_e mode; 
-  hal_nvic_line_device_e irq;
+  hal_nvic_line_device_e event_irq;
+  hal_nvic_line_device_e error_irq;
 
   bool send;
   hal_i2c_data_s data;
@@ -56,7 +57,8 @@ static hal_i2c_config_s i2c_pin_map[I2C_CHANNEL_COUNT] = {
       .sda = PORT_PIN('B', 7) 
     },
     .reg = I2C1,
-    .irq = NVIC_I2C1_EV
+    .event_irq = NVIC_I2C1_EV,
+    .error_irq = NVIC_I2C1_ER
   },
   [I2C_CHANNEL_IDX(I2C(2))] = (hal_i2c_config_s){ 
     .pins = { 
@@ -64,11 +66,13 @@ static hal_i2c_config_s i2c_pin_map[I2C_CHANNEL_COUNT] = {
       .sda = PORT_PIN('B', 11)
     },
     .reg = I2C2,
-    .irq = NVIC_I2C2_EV
+    .event_irq = NVIC_I2C2_EV,
+    .error_irq = NVIC_I2C2_ER
   },
 };
 
-static inline void hal_i2c_common_isr(i2c_channel_t channel);
+static inline void hal_i2c_event_isr(i2c_channel_t channel);
+static inline void hal_i2c_error_isr(i2c_channel_t channel);
 
 
 int hal_i2c_init(i2c_channel_t channel, i2c_mode_e mode, uint16_t address) {
@@ -88,8 +92,8 @@ int hal_i2c_init(i2c_channel_t channel, i2c_mode_e mode, uint16_t address) {
   // Set rise time based on the 10 MHz frequency
   cfg->reg->TRISE = 0x4;
 
-  // Set to I2C mode
-  cfg->reg->CR1 &= ~(I2C_CR1_SMBUS);
+  // Set to SMBus mode
+  cfg->reg->CR1 |= I2C_CR1_SMBUS;
 
   switch (mode) {
     case I2C_SLAVE:
@@ -113,15 +117,12 @@ int hal_i2c_init(i2c_channel_t channel, i2c_mode_e mode, uint16_t address) {
   // Enable interrupt
   cfg->reg->CR2 |= I2C_CR2_ITEVTEN;
   cfg->reg->CR2 |= I2C_CR2_ITBUFEN;
-  hal_nvic_init_device(cfg->irq);
+  cfg->reg->CR2 |= I2C_CR2_ITERREN;
+  hal_nvic_init_device(cfg->event_irq);
+  hal_nvic_init_device(cfg->error_irq);
 
   // Enable I2C
-  cfg->reg->CR1 |= I2C_CR1_PE;
-
-  // ACK must be set after PE
-  if (mode == I2C_SLAVE) {
-    cfg->reg->CR1 |= I2C_CR1_ACK;
-  }
+  cfg->reg->CR1 |= I2C_CR1_PE; 
 
   return 0;
 }
@@ -149,25 +150,32 @@ int hal_i2c_putn(i2c_channel_t channel, uint8_t *tx, uint16_t n, uint16_t slave_
     cfg->data.target = (slave_address << 1u);
     cfg->reg->CR1 |= I2C_CR1_START;
   }
+  else {
+    cfg->reg->CR1 |= I2C_CR1_ACK;
+  }
 
   return 0;
 }
 
-int hal_i2c_getn(i2c_channel_t master, uint8_t *tx, uint16_t n, uint16_t slave_address) {
-  if (I2C_CHANNEL_IDX(master) >= I2C_CHANNEL_COUNT) return -EINVAL;
+int hal_i2c_getn(i2c_channel_t channel, uint16_t n, uint16_t slave_address) {
+  if (I2C_CHANNEL_IDX(channel) >= I2C_CHANNEL_COUNT) return -EINVAL;
 
-  hal_i2c_config_s *cfg = &i2c_pin_map[I2C_CHANNEL_IDX(master)];
+  hal_i2c_config_s *cfg = &i2c_pin_map[I2C_CHANNEL_IDX(channel)];
 
   // Previous transmission not yet completed
   if (cfg->reg->SR2 & I2C_SR2_BUSY) return -EBUSY;
 
   cfg->data.i = 0;
   cfg->data.n = n;
-  cfg->data.tx = tx;
   cfg->send = false;
 
-  cfg->data.target = (slave_address << 1u) | 0x1;
-  cfg->reg->CR1 |= I2C_CR1_START;
+  if (cfg->mode == I2C_MASTER) {
+    cfg->data.target = (slave_address << 1u) | 0x1;
+    cfg->reg->CR1 |= I2C_CR1_START;
+  }
+  else {
+    cfg->reg->CR1 |= I2C_CR1_ACK;
+  }
 
   return 0;
 }
@@ -180,7 +188,7 @@ int hal_i2c_get(i2c_channel_t channel, uint8_t *rx) {
   return hal_rx_buffer_get(&cfg->data.rx_buf, rx);
 }
 
-static inline void hal_i2c_common_isr(i2c_channel_t channel) {
+static inline void hal_i2c_event_isr(i2c_channel_t channel) {
   hal_i2c_config_s *cfg = &i2c_pin_map[I2C_CHANNEL_IDX(channel)];
 
   // Start condition
@@ -237,9 +245,51 @@ static inline void hal_i2c_common_isr(i2c_channel_t channel) {
 }
 
 void I2C1_EV_IRQHandler(void) {
-  hal_i2c_common_isr(I2C(1));
+  hal_i2c_event_isr(I2C(1));
 }
 
 void I2C2_EV_IRQHandler(void) {
-  hal_i2c_common_isr(I2C(2));
+  hal_i2c_event_isr(I2C(2));
+}
+
+static inline void hal_i2c_error_isr(i2c_channel_t channel) {
+  hal_i2c_config_s *cfg = &i2c_pin_map[I2C_CHANNEL_IDX(channel)];
+
+  // Bus error (misplaced START or STOP condition)
+  if (cfg->reg->SR1 & I2C_SR1_BERR) {
+    cfg->reg->SR1 &= ~(I2C_SR1_BERR);
+  }
+
+  // Arbitration lost (master)
+  else if (cfg->reg->SR1 & I2C_SR1_ARLO) {
+    cfg->reg->SR1 &= ~(I2C_SR1_ARLO);
+  }
+
+  // Timeout
+  else if (cfg->reg->SR1 & I2C_SR1_TIMEOUT) {
+    cfg->reg->SR1 &= ~(I2C_SR1_TIMEOUT);
+  }
+
+  // Acknowledge failure
+  else if (cfg->reg->SR1 & I2C_SR1_AF) {
+    cfg->reg->SR1 &= ~(I2C_SR1_AF);
+  }
+
+  // Overrun / underrun
+  else if (cfg->reg->SR1 & I2C_SR1_OVR) {
+    cfg->reg->SR1 &= ~(I2C_SR1_OVR);
+  }
+
+  // PEC error in reception
+  else if (cfg->reg->SR1 & I2C_SR1_PECERR) {
+    cfg->reg->SR1 &= ~(I2C_SR1_PECERR);
+  }
+}
+
+void I2C1_ER_IRQHandler(void) {
+  hal_i2c_error_isr(I2C(1));
+}
+
+void I2C2_ER_IRQHandler(void) {
+  hal_i2c_error_isr(I2C(2));
 }

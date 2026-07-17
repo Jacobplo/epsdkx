@@ -21,7 +21,7 @@ const i2c_pins_s *i2c_get_pins(i2c_channel_t channel);
 
 int i2c_putn(i2c_channel_t channel, uint8_t *tx, uint16_t n, uint16_t slave_address);
 
-int i2c_getn(i2c_channel_t master, uint8_t *tx, uint16_t n, uint16_t slave_address);
+int i2c_getn(i2c_channel_t channel, uint16_t n, uint16_t slave_address);
 
 int i2c_get(i2c_channel_t channel, uint8_t *rx);
 
