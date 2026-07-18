@@ -27,16 +27,14 @@
 #define I2C_CHANNEL_IDX(n) ((n) - 1)
 #define I2C_CHANNEL_COUNT  2
 
-typedef volatile struct hal_i2c_data_s{
-  // Master
+typedef struct hal_i2c_data_s{
   uint16_t target;
   uint8_t *tx;
-
-  // Slave
-  hal_rx_buffer_s rx_buf;
-
-  uint16_t i;
+  volatile uint16_t i;
   uint16_t n;
+  bool send;
+
+  hal_rx_buffer_s rx_buf; 
 } hal_i2c_data_s;
 
 typedef struct hal_i2c_config_s {
@@ -46,7 +44,6 @@ typedef struct hal_i2c_config_s {
   hal_nvic_line_device_e event_irq;
   hal_nvic_line_device_e error_irq;
 
-  bool send;
   hal_i2c_data_s data;
 } hal_i2c_config_s;
 
@@ -144,7 +141,7 @@ int hal_i2c_putn(i2c_channel_t channel, uint8_t *tx, uint16_t n, uint16_t slave_
   cfg->data.tx = tx;
   cfg->data.i = 0;
   cfg->data.n = n;
-  cfg->send = true;
+  cfg->data.send = true;
 
   if (cfg->mode == I2C_MASTER) {
     cfg->data.target = (slave_address << 1u);
@@ -167,7 +164,7 @@ int hal_i2c_getn(i2c_channel_t channel, uint16_t n, uint16_t slave_address) {
 
   cfg->data.i = 0;
   cfg->data.n = n;
-  cfg->send = false;
+  cfg->data.send = false;
 
   if (cfg->mode == I2C_MASTER) {
     cfg->data.target = (slave_address << 1u) | 0x1;
@@ -199,7 +196,7 @@ static inline void hal_i2c_event_isr(i2c_channel_t channel) {
   // Address acknowledged
   else if (cfg->reg->SR1 & I2C_SR1_ADDR) { 
     // Receiver (master)
-    if (cfg->reg->SR2 & I2C_SR2_MSL && !cfg->send) { 
+    if (cfg->reg->SR2 & I2C_SR2_MSL && !cfg->data.send) { 
       cfg->reg->CR1 |= I2C_CR1_ACK;
       // Generate NACK and STOP if only one byte is being transmitted
       if (cfg->data.n == 1) {
@@ -210,7 +207,7 @@ static inline void hal_i2c_event_isr(i2c_channel_t channel) {
     // Transmitter (master / slave)
     else {
       cfg->reg->DR = cfg->data.tx[cfg->data.i++];
-      cfg->send = false;
+      cfg->data.send = false;
     }
   }
 
