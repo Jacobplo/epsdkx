@@ -89,19 +89,19 @@ DEPS         := $(SOURCES:%.c=$(DEP_DIR)/%.d)
 -include $(DEPS)
 
 # Build object files and dependency files (.o and .d)
-$(OBJ_DIR)/%.o: %.c $(KCONFIG_CONFIG)
+$(OBJ_DIR)/%.o: %.c $(KCONFIG_AUTOHEADER)
 	@printf '\tCC\t%s\n' $<
 	@mkdir -p $(dir $@) $(dir $(DEP_DIR)/$*)
 	@$(CC) $(CFLAGS) $(INCLUDE) $(DEFINE) -c $< -o $@ -MF $(DEP_DIR)/$*.d
 
 # Build object files for ASM files
-$(OBJ_DIR)/%.o: %.s $(KCONFIG_CONFIG)
+$(OBJ_DIR)/%.o: %.s $(KCONFIG_AUTOHEADER)
 	@printf '\tCC\t%s\n' $<
 	@mkdir -p $(dir $@)
 	@$(CC) $(CFLAGS) -c $< -o $@
 
 # Build flashable firmware
-$(BUILD_DIR)/firmware.elf: $(OBJS) $(ASM_OBJS) $(BOARD_DIR)/link.ld $(KCONFIG_CONFIG)
+$(BUILD_DIR)/firmware.elf: $(OBJS) $(ASM_OBJS) $(BOARD_DIR)/link.ld $(KCONFIG_AUTOHEADER)
 	@printf '\tLD\t%s\n' $@
 	@$(CC) $(OBJS) $(ASM_OBJS) $(CFLAGS) $(LDFLAGS) -o $@
 
