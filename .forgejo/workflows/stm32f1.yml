@@ -18,7 +18,7 @@ jobs:
 
       - name: Build all modules
         working-directory: ${{ forgejo.workspace }}/tests/build
-        run: make all
+        run: make -j8 all
 
   StaticAnalysis:
     runs-on: native
@@ -36,6 +36,6 @@ jobs:
       - name: Run clang-tidy on platform sources
         working-directory: ${{ forgejo.workspace }}/tests/build
         run: |
-          make compile_commands.json
+          make -j8 compile_commands.json
           find ${{ forgejo.workspace }}/hal/${{ env.FAMILY }} ${{ forgejo.workspace }}/boards/${{ env.FAMILY }} \( -name "*.c" -o -name "*.h" \) -print0 \
             | xargs -0 clang-tidy --config-file="${{ forgejo.workspace }}/tests/build/.clang-tidy" -p .
