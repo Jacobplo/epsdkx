@@ -12,7 +12,6 @@
 #include <errno.h>
 #include <stddef.h>
 
-#include "stm32f103xb.h"
 #include "stm32f1xx.h"
 
 
