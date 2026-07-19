@@ -6,8 +6,15 @@
 #include <epsdkx/common/i2c.h>
 #include <epsdkx/common/spi.h>
 #include <epsdkx/common/gpio.h>
+#include <epsdkx/generated/config.h>
 
 #include <stdint.h>
+#include <errno.h>
+
+
+#if !(defined (CONFIG_I2C)) && !(defined (CONFIG_SPI))
+#error Either CONFIG_I2C or CONFIG_SPI must be enabled
+#endif
 
 
 typedef struct bmp280_compensation_params_s {
@@ -34,6 +41,8 @@ static inline void get_compensation_params(bmp280_dev_s *dev);
 static inline void configure_measurements(bmp280_dev_s *dev);
 
 int bmp280_init_spi(bmp280_dev_s *dev, spi_channel_t channel, gpio_pin_u csb) {
+  if (!CONFIG_SPI) return -EPERM;
+
   int ret;
 
   dev->type = BMP280_SPI;
@@ -56,6 +65,8 @@ int bmp280_init_spi(bmp280_dev_s *dev, spi_channel_t channel, gpio_pin_u csb) {
 }
 
 int bmp280_init_i2c(bmp280_dev_s *dev, i2c_channel_t channel, gpio_state_e sdo_state) {
+  if (!CONFIG_I2C) return -EPERM;
+
   int ret;
 
   dev->type = BMP280_I2C;
