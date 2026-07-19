@@ -12,8 +12,8 @@ const spi_pins_s *spi_get_pins(spi_channel_t channel) {
   return hal_spi_get_pins(channel);
 }
 
-void spi_put(spi_channel_t channel, uint8_t tx) {
-  hal_spi_put(channel, tx);
+int spi_put(spi_channel_t channel, uint8_t tx) {
+  return hal_spi_put(channel, tx);
 }
 
 int spi_get(spi_channel_t channel, uint8_t *rx) {
