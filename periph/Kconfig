@@ -1,0 +1,2 @@
+config PERIPH_BMP280
+  bool "BMP280 temperature / pressure sensor"

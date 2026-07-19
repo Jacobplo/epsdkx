@@ -1,0 +1,1 @@
+-include $(PERIPH_DIR)/bmp280/Makefile

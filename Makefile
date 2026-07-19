@@ -14,6 +14,7 @@ SRC_TREE     := $(patsubst %/,%,$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 BOARD_DIR    := $(SDK_ROOT)/boards/$(FAMILY)/$(BOARD)
 HAL_DIR      := $(SDK_ROOT)/hal/$(FAMILY)
 DRIVER_DIR   := $(SDK_ROOT)/drivers
+PERIPH_DIR   := $(SDK_ROOT)/periph
 OUTPUT_DIR   := $(CURDIR)
 
 BUILD_DIR    := $(OUTPUT_DIR)/build
@@ -70,7 +71,8 @@ endif
 
 -include $(BOARD_DIR)/Makefile
 -include $(SDK_ROOT)/hal/Makefile
--include $(SDK_ROOT)/drivers/Makefile
+-include $(DRIVER_DIR)/Makefile
+-include $(PERIPH_DIR)/Makefile
 
 # ============
 # Object Files

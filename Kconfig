@@ -1,6 +1,7 @@
 rsource "hal/Kconfig"
 rsource "drivers/Kconfig"
 rsource "boards/$(FAMILY)/$(BOARD)/Kconfig"
+rsource "periph/Kconfig"
 
 config DEBUG
   bool "Enable Debug Features"
