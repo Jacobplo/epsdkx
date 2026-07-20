@@ -63,9 +63,15 @@ int bmp280_init_i2c(bmp280_dev_s *dev, i2c_channel_t channel, gpio_state_e sdo_s
 
   dev->type = BMP280_I2C;
   dev->channel.i2c = channel;
-  dev->i2c_addr = 0xE6 | sdo_state;
+  dev->i2c_addr = 0x76 | sdo_state;
 
   ret = i2c_init_master(channel);
+
+  time_delay_ms(5);
+
+  bmp280_write(dev, BMP280_RESET_ADDR, 0xB6);
+
+  time_delay_ms(5);
 
   if (ret >= 0) {
     get_compensation_params(dev);
@@ -117,6 +123,7 @@ static void bmp280_write(bmp280_dev_s *dev, bmp280_addr_e addr, uint8_t tx) {
 
     case BMP280_I2C:
       i2c_putn(dev->channel.i2c, i2c_packet, 2, dev->i2c_addr);
+      while (i2c_is_busy(dev->channel.i2c)) (void)0;
       break;
   }
 }
@@ -150,14 +157,17 @@ static void bmp280_readn(bmp280_dev_s *dev, bmp280_addr_e addr, uint8_t *rx, uin
     case BMP280_I2C:
       // Select register address
       i2c_putn(dev->channel.i2c, (uint8_t *)&addr, 1, dev->i2c_addr);
+      while (i2c_is_busy(dev->channel.i2c)) (void)0;
 
       // Read N bytes from sequential registers
       i2c_getn(dev->channel.i2c, n, dev->i2c_addr);
+      while (i2c_is_busy(dev->channel.i2c)) (void)0;
 
       // Get RX data
       for (i = 0; i < n; i++) {
         while (i2c_get(dev->channel.i2c, &rx[i]) < 0) (void)0;
       }
+
       break;
   }
 }
