@@ -6,6 +6,7 @@
 #include <epsdkx/common/i2c.h>
 #include <epsdkx/common/spi.h>
 #include <epsdkx/common/gpio.h>
+#include <epsdkx/drivers/time.h>
 #include <epsdkx/generated/config.h>
 
 #include <stdint.h>
@@ -17,25 +18,10 @@
 #endif
 
 
-typedef struct bmp280_compensation_params_s {
-  uint16_t dig_T1;
-  int16_t dig_T2;
-  int16_t dig_T3;
-  uint16_t dig_P1;
-  int16_t dig_P2;
-  int16_t dig_P3;
-  int16_t dig_P4;
-  int16_t dig_P5;
-  int16_t dig_P6;
-  int16_t dig_P7;
-  int16_t dig_P8;
-  int16_t dig_P9;
-} bmp280_compensation_params_s;
-
-static bmp280_compensation_params_s params;
-
-static int32_t t_fine;
-
+static void bmp280_write(bmp280_dev_s *dev, bmp280_addr_e addr, uint8_t tx);
+static void bmp280_readn(bmp280_dev_s *dev, bmp280_addr_e addr, uint8_t *rx, uint8_t n);
+static double bmp280_compensate_temperature(bmp280_dev_s *dev, int32_t adc_t);
+static double bmp280_compensate_pressure(bmp280_dev_s *dev, int32_t adc_p);
 
 static inline void get_compensation_params(bmp280_dev_s *dev);
 static inline void configure_measurements(bmp280_dev_s *dev);
@@ -54,7 +40,13 @@ int bmp280_init_spi(bmp280_dev_s *dev, spi_channel_t channel, gpio_pin_u csb) {
   gpio_write(&csb, GPIO_HIGH);
 
 
-  ret = spi_init(channel, SPI_MASTER, SPI_CPOL0, SPI_CPHA0); 
+  ret = spi_init(channel, SPI_MASTER, SPI_CPOL0, SPI_CPHA0);
+
+  time_delay_ms(5);
+
+  bmp280_write(dev, BMP280_RESET_ADDR, 0xB6);
+
+  time_delay_ms(5);
 
   if (ret >= 0) {
     get_compensation_params(dev);
@@ -83,14 +75,43 @@ int bmp280_init_i2c(bmp280_dev_s *dev, i2c_channel_t channel, gpio_state_e sdo_s
   return ret;
 }
 
-void bmp280_write(bmp280_dev_s *dev, bmp280_addr_e addr, uint8_t tx) {
+double bmp280_get_temperature(bmp280_dev_s *dev) {
+  uint8_t raw[3];
+  bmp280_readn(dev, BMP280_TEMP_MSB_ADDR, raw, 3);
+
+  int32_t adc_t = (raw[0] << 12) | (raw[1] << 4) | (raw[2] >> 4);
+
+  return bmp280_compensate_temperature(dev, adc_t);
+}
+
+double bmp280_get_pressure(bmp280_dev_s *dev) {
+  uint8_t raw[6];
+  bmp280_readn(dev, BMP280_PRESS_MSB_ADDR, raw, 6);
+
+  int32_t adc_p = (raw[0] << 12) | (raw[1] << 4) | (raw[2] >> 4);
+  int32_t adc_t = (raw[3] << 12) | (raw[4] << 4) | (raw[5] >> 4);
+
+  // Call compensate_temperature() to get t_fine
+  bmp280_compensate_temperature(dev, adc_t);
+
+  return bmp280_compensate_pressure(dev, adc_p);
+}
+
+static void bmp280_write(bmp280_dev_s *dev, bmp280_addr_e addr, uint8_t tx) {
+  uint8_t discard;
+
   uint8_t i2c_packet[2] = { addr, tx };
 
   switch (dev->type) {
     case BMP280_SPI:
       gpio_write(&dev->spi_csb, GPIO_LOW);
-      spi_put(dev->channel.spi, addr);
+
+      spi_put(dev->channel.spi, addr & 0x7F);
+      while (spi_get(dev->channel.spi, &discard) < 0) (void)0;
+
       spi_put(dev->channel.spi, tx);
+      while (spi_get(dev->channel.spi, &discard) < 0) (void)0;
+
       gpio_write(&dev->spi_csb, GPIO_HIGH);
       break;
 
@@ -100,8 +121,9 @@ void bmp280_write(bmp280_dev_s *dev, bmp280_addr_e addr, uint8_t tx) {
   }
 }
 
-void bmp280_readn(bmp280_dev_s *dev, bmp280_addr_e addr, uint8_t *rx, uint8_t n) {
+static void bmp280_readn(bmp280_dev_s *dev, bmp280_addr_e addr, uint8_t *rx, uint8_t n) {
   int i;
+  uint8_t discard;
 
   switch (dev->type) {
     case BMP280_SPI:
@@ -109,18 +131,19 @@ void bmp280_readn(bmp280_dev_s *dev, bmp280_addr_e addr, uint8_t *rx, uint8_t n)
 
       // Select register address
       spi_put(dev->channel.spi, addr | 0x80);
+      while (spi_get(dev->channel.spi, &discard) < 0) (void)0;
 
       // Read N bytes from sequential registers
       for (i = 0; i < n; i++) {
         spi_put(dev->channel.spi, 0);
       }
 
-      gpio_write(&dev->spi_csb, GPIO_HIGH); 
-
       // Get RX data
       for (i = 0; i < n; i++) {
         while (spi_get(dev->channel.spi, &rx[i]) < 0) (void)0;
       }
+
+      gpio_write(&dev->spi_csb, GPIO_HIGH); 
 
       break;
 
@@ -141,33 +164,33 @@ void bmp280_readn(bmp280_dev_s *dev, bmp280_addr_e addr, uint8_t *rx, uint8_t n)
 
 // Returns temperature in DegC, double precision. Output value of “51.23” equals 51.23 DegC.
 // t_fine carries fine temperature as global value
-double bmp280_compensate_temperature(int32_t adc_t) {
+static double bmp280_compensate_temperature(bmp280_dev_s *dev, int32_t adc_t) {
   double var1, var2, t;
 
-  var1 = (((double)adc_t) / 16384.0 - ((double)params.dig_T1) / 1024.0) *
-         ((double)params.dig_T2);
+  var1 = (((double)adc_t) / 16384.0 - ((double)dev->params.dig_T1) / 1024.0) *
+         ((double)dev->params.dig_T2);
 
-  var2 = ((((double)adc_t) / 131072.0 - ((double)params.dig_T1) / 8192.0) *
-         (((double)adc_t) / 131072.0 - ((double)params.dig_T1) / 8192.0)) *
-         ((double)params.dig_T3);
+  var2 = ((((double)adc_t) / 131072.0 - ((double)dev->params.dig_T1) / 8192.0) *
+         (((double)adc_t) / 131072.0 - ((double)dev->params.dig_T1) / 8192.0)) *
+         ((double)dev->params.dig_T3);
 
-  t_fine = (int32_t)(var1 + var2);
+  dev->t_fine = (int32_t)(var1 + var2);
   t = (var1 + var2) / 5120.0;
   return t;
 }
 
 // Returns pressure in Pa as double. Output value of “96386.2” equals 96386.2 Pa = 963.862 hPa
-double bmp280_compensate_pressure(int32_t adc_p) {
+static double bmp280_compensate_pressure(bmp280_dev_s *dev, int32_t adc_p) {
   double var1, var2, p;
-  var1 = ((double)t_fine / 2.0) - 64000.0;
+  var1 = ((double)dev->t_fine / 2.0) - 64000.0;
 
-  var2 = var1 * var1 * ((double)params.dig_P6) / 32768.0;
-  var2 = var2 + var1 * ((double)params.dig_P5) * 2.0;
-  var2 = (var2 / 4.0) + (((double)params.dig_P4) * 65536.0);
+  var2 = var1 * var1 * ((double)dev->params.dig_P6) / 32768.0;
+  var2 = var2 + var1 * ((double)dev->params.dig_P5) * 2.0;
+  var2 = (var2 / 4.0) + (((double)dev->params.dig_P4) * 65536.0);
 
-  var1 = (((double)params.dig_P3) * var1 * var1 / 524288.0 + ((double)params.dig_P2) * var1) /
+  var1 = (((double)dev->params.dig_P3) * var1 * var1 / 524288.0 + ((double)dev->params.dig_P2) * var1) /
          524288.0;
-  var1 = (1.0 + var1 / 32768.0) * ((double)params.dig_P1);
+  var1 = (1.0 + var1 / 32768.0) * ((double)dev->params.dig_P1);
 
   // Avoid exception caused by division by zero
   if (var1 == 0.0) {
@@ -177,15 +200,15 @@ double bmp280_compensate_pressure(int32_t adc_p) {
   p = 1048576.0 - (double)adc_p;
   p = (p - (var2 / 4096.0)) * 6250.0 / var1;
 
-  var1 = ((double)params.dig_P9) * p * p / 2147483648.0;
-  var2 = p * ((double)params.dig_P8) / 32768.0;
+  var1 = ((double)dev->params.dig_P9) * p * p / 2147483648.0;
+  var2 = p * ((double)dev->params.dig_P8) / 32768.0;
 
-  p = p + (var1 + var2 + ((double)params.dig_P7)) / 16.0;
+  p = p + (var1 + var2 + ((double)dev->params.dig_P7)) / 16.0;
   return p;
 }
 
 static inline void get_compensation_params(bmp280_dev_s *dev) {
-  bmp280_readn(dev, 0x88, (uint8_t *)&params, sizeof(bmp280_compensation_params_s));
+  bmp280_readn(dev, BMP280_CALIB_BASE_ADDR, (uint8_t *)&dev->params, sizeof(bmp280_compensation_params_s));
 }
 
 static inline void configure_measurements(bmp280_dev_s *dev) {
