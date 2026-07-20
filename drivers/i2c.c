@@ -14,6 +14,10 @@ const i2c_pins_s *i2c_get_pins(i2c_channel_t channel) {
   return hal_i2c_get_pins(channel);
 }
 
+bool i2c_is_busy(i2c_channel_t channel) {
+  return hal_i2c_is_busy(channel);
+}
+
 int i2c_putn(i2c_channel_t channel, uint8_t *tx, uint16_t n, uint16_t slave_address) {
   return hal_i2c_putn(channel, tx, n, slave_address);
 }

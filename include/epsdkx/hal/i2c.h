@@ -3,6 +3,7 @@
 
 #include <epsdkx/common/i2c.h>
 
+#include <stdbool.h>
 #include <stdint.h>
 
 
@@ -15,5 +16,7 @@ int hal_i2c_putn(i2c_channel_t channel, uint8_t *tx, uint16_t n, uint16_t slave_
 int hal_i2c_getn(i2c_channel_t channel, uint16_t n, uint16_t slave_address);
 
 int hal_i2c_get(i2c_channel_t channel, uint8_t *rx);
+
+bool hal_i2c_is_busy(i2c_channel_t channel);
 
 #endif

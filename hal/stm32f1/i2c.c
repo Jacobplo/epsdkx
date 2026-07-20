@@ -129,6 +129,12 @@ const i2c_pins_s *hal_i2c_get_pins(i2c_channel_t channel) {
   return &i2c_pin_map[I2C_CHANNEL_IDX(channel)].pins;
 }
 
+bool hal_i2c_is_busy(i2c_channel_t channel) {
+  hal_i2c_config_s *cfg = &i2c_pin_map[I2C_CHANNEL_IDX(channel)];
+
+  return cfg->reg->SR2 & I2C_SR2_BUSY;
+}
+
 int hal_i2c_putn(i2c_channel_t channel, uint8_t *tx, uint16_t n, uint16_t slave_address) {
   if (I2C_CHANNEL_IDX(channel) >= I2C_CHANNEL_COUNT) return -EINVAL;
 
