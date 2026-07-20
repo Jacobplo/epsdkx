@@ -22,6 +22,7 @@ static void bmp280_write(bmp280_dev_s *dev, bmp280_addr_e addr, uint8_t tx);
 static void bmp280_readn(bmp280_dev_s *dev, bmp280_addr_e addr, uint8_t *rx, uint8_t n);
 static double bmp280_compensate_temperature(bmp280_dev_s *dev, int32_t adc_t);
 static double bmp280_compensate_pressure(bmp280_dev_s *dev, int32_t adc_p);
+static double bmp280_compensate_humidity(bmp280_dev_s *dev, int32_t adc_h);
 
 static inline void get_compensation_params(bmp280_dev_s *dev);
 static inline void configure_measurements(bmp280_dev_s *dev);
@@ -48,6 +49,8 @@ int bmp280_init_spi(bmp280_dev_s *dev, spi_channel_t channel, gpio_pin_u csb) {
 
   time_delay_ms(5);
 
+  bmp280_readn(dev, BMP280_ID_ADDR, &dev->id, 1);
+
   if (ret >= 0) {
     get_compensation_params(dev);
     configure_measurements(dev);
@@ -72,6 +75,8 @@ int bmp280_init_i2c(bmp280_dev_s *dev, i2c_channel_t channel, gpio_state_e sdo_s
   bmp280_write(dev, BMP280_RESET_ADDR, 0xB6);
 
   time_delay_ms(5);
+
+  bmp280_readn(dev, BMP280_ID_ADDR, &dev->id, 1);
 
   if (ret >= 0) {
     get_compensation_params(dev);
@@ -101,6 +106,21 @@ double bmp280_get_pressure(bmp280_dev_s *dev) {
   bmp280_compensate_temperature(dev, adc_t);
 
   return bmp280_compensate_pressure(dev, adc_p);
+}
+
+double bmp280_get_humidity(bmp280_dev_s *dev) {
+  if (dev->id != 0x60) return -EPERM;
+
+  uint8_t raw[5];
+  bmp280_readn(dev, BMP280_TEMP_MSB_ADDR, raw, 5);
+
+  int32_t adc_t = (raw[0] << 12) | (raw[1] << 4) | (raw[2] >> 4);
+  int32_t adc_h = (raw[3] << 8) | raw[4];
+
+  // Call compensate_temperature() to get t_fine
+  bmp280_compensate_temperature(dev, adc_t);
+
+  return bmp280_compensate_humidity(dev, adc_h);
 }
 
 static void bmp280_write(bmp280_dev_s *dev, bmp280_addr_e addr, uint8_t tx) {
@@ -217,13 +237,59 @@ static double bmp280_compensate_pressure(bmp280_dev_s *dev, int32_t adc_p) {
   return p;
 }
 
+static double bmp280_compensate_humidity(bmp280_dev_s *dev, int32_t adc_h) {
+  double h;
+
+  h = (((double)dev->t_fine) - 76800.0);
+
+  h = (adc_h - (((double)dev->params.dig_H4) * 64.0 + ((double)dev->params.dig_H5) / 16384.0 * h)) *
+      (((double)dev->params.dig_H2) / 65536.0 *
+        (1.0 + ((double)dev->params.dig_H6) / 67108864.0 * h *
+          (1.0 + ((double)dev->params.dig_H3) / 67108864.0 * h)));
+
+  h = h * (1.0 - ((double)dev->params.dig_H1) * h / 524288.0);
+
+  if (h > 100.0) {
+    h = 100.0;
+  }
+
+  else if (h < 0.0) {
+    h = 0.0;
+  }
+
+  return h;
+}
+
 static inline void get_compensation_params(bmp280_dev_s *dev) {
-  bmp280_readn(dev, BMP280_CALIB_BASE_ADDR, (uint8_t *)&dev->params, sizeof(bmp280_compensation_params_s));
+  bmp280_readn(dev, BMP280_CALIB1_BASE_ADDR, (uint8_t *)&dev->params, sizeof(bmp280_compensation_params_s));
+
+  // BME280 also measures humidity
+  if (dev->id == 0x60) {
+    // H1
+    bmp280_readn(dev, 0xA1, &dev->params.dig_H1, 1);
+    // H2 / H3
+    bmp280_readn(dev, BMP280_CALIB2_BASE_ADDR, (uint8_t *)&dev->params.dig_H2, 3);
+    
+    uint8_t addr_E4_base[3];
+    bmp280_readn(dev, 0xE4, addr_E4_base, 3);
+    
+    // H4
+    dev->params.dig_H4 = (addr_E4_base[0] << 4) | (addr_E4_base[1] & 0x0F);
+
+    // H5
+    dev->params.dig_H5 = (addr_E4_base[2] << 4) | (addr_E4_base[1] & 0xF0);
+  }
 }
 
 static inline void configure_measurements(bmp280_dev_s *dev) {
   // Set 62.5 ms standby, IIR filter coefficient of 16, and 4-wire spi mode
   bmp280_write(dev, BMP280_CONFIG_ADDR, 0x3C);
+
+  // BME280 also measures humidity
+  if (dev->id == 0x60) {
+    // Set 1x humidity oversampling
+    bmp280_write(dev, BMP280_CTRL_HUM, 0x01);
+  }
 
   // Set 1x temperature oversampling, 4x pressure oversampling, and normal mode
   bmp280_write(dev, BMP280_CTRL_MEAS_ADDR, 0x2F);
