@@ -5,3 +5,16 @@ rsource "periph/Kconfig"
 
 config DEBUG
   bool "Enable Debug Features"
+
+config NEWLIB_LIBC
+  bool "Use newlib for libc"
+  depends on PLATFORM_SUPPORTS_NEWLIB_LIBC
+  default y if NEWLIB_LIBC_NANO
+
+config NEWLIB_LIBC_NANO
+  bool "Use newlib nano for libc"
+  depends on PLATFORM_SUPPORTS_NEWLIB_LIBC
+
+config NEWLIB_LIBC_FLOAT_PRINTF
+  bool "Enable floating-point specifier support for printf"
+  depends on NEWLIB_LIBC

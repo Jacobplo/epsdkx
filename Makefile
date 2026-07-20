@@ -15,6 +15,7 @@ BOARD_DIR    := $(SDK_ROOT)/boards/$(FAMILY)/$(BOARD)
 HAL_DIR      := $(SDK_ROOT)/hal/$(FAMILY)
 DRIVER_DIR   := $(SDK_ROOT)/drivers
 PERIPH_DIR   := $(SDK_ROOT)/periph
+SYS_DIR      := $(SDK_ROOT)/sys
 OUTPUT_DIR   := $(CURDIR)
 
 BUILD_DIR    := $(OUTPUT_DIR)/build
@@ -61,8 +62,20 @@ ifeq ($(filter clean, $(MAKECMDGOALS)),)
 -include $(KCONFIG_CONFIG)
 endif
 
+# ======================
+# Kconfig Optional Flags
+# ======================
+
 ifeq ($(CONFIG_DEBUG),y)
 CFLAGS += -g3 -Og
+endif
+
+ifeq ($(CONFIG_NEWLIB_LIBC_NANO),y)
+LDFLAGS += --specs=nano.specs
+endif
+
+ifeq ($(CONFIG_NEWLIB_LIBC_FLOAT_PRINTF),y)
+LDFLAGS += -u _printf_float
 endif
 
 # =================
@@ -73,6 +86,7 @@ endif
 -include $(SDK_ROOT)/hal/Makefile
 -include $(DRIVER_DIR)/Makefile
 -include $(PERIPH_DIR)/Makefile
+-include $(SYS_DIR)/Makefile
 
 # ============
 # Object Files

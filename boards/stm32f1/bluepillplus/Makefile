@@ -8,4 +8,4 @@ ASM_SOURCES  += $(BOARD_DIR)/startup.s
 
 CFLAGS       += -mcpu=cortex-m3 -mthumb
 
-LDFLAGS      += -T$(BOARD_DIR)/link.ld --specs=nano.specs
+LDFLAGS      += -T$(BOARD_DIR)/link.ld

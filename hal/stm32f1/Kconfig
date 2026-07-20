@@ -1,3 +1,7 @@
+# =======
+# Drivers
+# =======
+
 config PLATFORM_SUPPORTS_GPIO
   def_bool y
 
@@ -17,4 +21,11 @@ config PLATFORM_SUPPORTS_TIMING
   def_bool y
 
 config PLATFORM_SUPPORTS_PINCTRL
+  def_bool y
+
+# ====
+# LIBC
+# ====
+
+config PLATFORM_SUPPORTS_NEWLIB_LIBC
   def_bool y
