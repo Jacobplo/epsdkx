@@ -2,6 +2,7 @@
 # Default Target
 # ==============
 
+.DEFAULT_GOAL := all
 .PHONY: all
 all: setup check build
 
@@ -33,10 +34,9 @@ INCLUDE      += -isystem $(SDK_ROOT)/include \
                 -isystem $(BOARD_DIR)/include
 
 DEFINE       +=
-
 SOURCES      +=
 ASM_SOURCES  +=
-src-y        :=
+src-y        ?=
 
 CFLAGS       += -W -Wall -Wextra -Wundef -Wshadow -Wdouble-promotion \
                 -Wformat-truncation -fno-common -ffunction-sections -fdata-sections \
@@ -92,11 +92,11 @@ endif
 # Object Files
 # ============
 
+.SECONDEXPANSION:
 SOURCES      += $(src-y)
-
-OBJS         := $(SOURCES:%.c=$(OBJ_DIR)/%.o)
-ASM_OBJS     := $(ASM_SOURCES:%.s=$(OBJ_DIR)/%.o)
-DEPS         := $(SOURCES:%.c=$(DEP_DIR)/%.d)
+OBJS         = $(SOURCES:%.c=$(OBJ_DIR)/%.o)
+ASM_OBJS     = $(ASM_SOURCES:%.s=$(OBJ_DIR)/%.o)
+DEPS         = $(SOURCES:%.c=$(DEP_DIR)/%.d)
 
 # =======
 # Targets
@@ -117,7 +117,7 @@ $(OBJ_DIR)/%.o: %.s $(KCONFIG_AUTOHEADER)
 	@$(CC) $(CFLAGS) -c $< -o $@
 
 # Build flashable firmware
-$(BUILD_DIR)/firmware.elf: $(OBJS) $(ASM_OBJS) $(BOARD_DIR)/link.ld $(KCONFIG_AUTOHEADER)
+$(BUILD_DIR)/firmware.elf: $$(OBJS) $$(ASM_OBJS) $(BOARD_DIR)/link.ld $(KCONFIG_AUTOHEADER)
 	@printf '\tLD\t%s\n' $@
 	@$(CC) $(OBJS) $(ASM_OBJS) $(CFLAGS) $(LDFLAGS) -o $@
 
