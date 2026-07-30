@@ -1,2 +1,5 @@
 config CORE_CLOCK_FREQ
   int "Core clock frequency in Hz"
+
+config LOW_POWER
+  bool "Use a lower core clock frequency for lower current draw"
