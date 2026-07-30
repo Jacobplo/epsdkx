@@ -1,3 +1,7 @@
+config CORE_CLOCK_FREQ
+  default 8000000 if LOW_POWER
+  default 72000000
+
 config STM32F1_I2C_CCR
   hex
   default 0x801e

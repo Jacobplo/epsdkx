@@ -1,0 +1,2 @@
+config CORE_CLOCK_FREQ
+  int "Core clock frequency in Hz"

@@ -9,7 +9,7 @@ static volatile uint32_t s_ticks;
 
 
 void hal_systick_init(void) {
-  SystemCoreClockUpdate();
+  extern uint32_t SystemCoreClock;
   SysTick_Config(SystemCoreClock / 1000);
 }
 

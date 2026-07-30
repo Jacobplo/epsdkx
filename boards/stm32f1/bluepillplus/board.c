@@ -2,12 +2,7 @@
 
 #include <epsdkx/generated/config.h>
 
-#include <stdint.h>
-
 #include "stm32f1xx.h"
-
-
-uint32_t SystemCoreClock;
 
 // Called automatically by startup code.
 void SystemInit(void) {
@@ -54,14 +49,5 @@ void SystemInit(void) {
   // Set SYSCLK to use PLL
   RCC->CFGR &= ~(RCC_CFGR_SW);
   RCC->CFGR |= (RCC_CFGR_SW_PLL);
-#endif
-}
-
-
-void SystemCoreClockUpdate(void) {
-#if defined (CONFIG_LOW_POWER)
-  SystemCoreClock = 8000000;
-#else
-  SystemCoreClock = 72000000;
 #endif
 }
