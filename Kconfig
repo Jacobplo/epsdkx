@@ -6,6 +6,9 @@ rsource "periph/Kconfig"
 config DEBUG
   bool "Enable Debug Features"
 
+config LOW_POWER
+  bool "Use a lower oscillator speed for lower current draw"
+
 config NEWLIB_LIBC
   bool "Use newlib for libc"
   depends on PLATFORM_SUPPORTS_NEWLIB_LIBC

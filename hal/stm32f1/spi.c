@@ -1,10 +1,12 @@
 #include <epsdkx/common/gpio.h>
+#include <epsdkx/common/spi.h>
 #include <epsdkx/hal/spi.h>
 
 #include <epsdkx/hal/gpio.h>
 #include <epsdkx/generated/config.h>
 #include "private/nvic.h"
 #include "private/rx_buffer.h"
+#include "private/rcc.h"
 
 #include <errno.h>
 #include <stdint.h>
@@ -50,6 +52,9 @@ static hal_spi_config_s spi_pin_map[SPI_CHANNEL_COUNT] = {
   },
 };
 
+// Sets baud rate to a speed close to 1 to 2 MHz
+static void hal_spi_set_baud_rate(spi_channel_t channel);
+
 static inline void hal_spi_common_isr(spi_channel_t channel);
 
 
@@ -83,9 +88,7 @@ int hal_spi_init(spi_channel_t channel, spi_mode_e mode, spi_cpol_e cpol, spi_cp
       hal_gpio_configure(&cfg->pins.mosi, GPIO_OUT_ALT_PUSH_PULL);
       hal_gpio_configure(&cfg->pins.miso, GPIO_IN);
 
-      // Set baud rate to PCLK / 32
-      cfg->reg->CR1 &= ~(SPI_CR1_BR);
-      cfg->reg->CR1 |= (SPI_CR1_BR_2);
+      hal_spi_set_baud_rate(channel); 
 
       // Set software slave select
       cfg->reg->CR1 |= (SPI_CR1_SSM | SPI_CR1_SSI);
@@ -159,6 +162,57 @@ int hal_spi_get(spi_channel_t channel, uint8_t *rx) {
   hal_spi_config_s *cfg = &spi_pin_map[SPI_CHANNEL_IDX(channel)];
 
   return hal_rx_buffer_get(&cfg->rx_buf, rx);
+}
+
+static void hal_spi_set_baud_rate(spi_channel_t channel) {
+  hal_spi_config_s *cfg = &spi_pin_map[SPI_CHANNEL_IDX(channel)];
+
+  cfg->reg->CR1 &= ~(SPI_CR1_BR);
+
+  uint32_t pclk;
+  switch (channel) {
+    case SPI(1):
+      pclk = hal_rcc_get_pclk2();
+      break;
+    case SPI(2):
+      pclk = hal_rcc_get_pclk1();
+      break;
+    default:
+      pclk = hal_rcc_get_pclk2();
+      break;
+  }
+
+  // Target speed is 1-2 MHz, so we divide by 2 MHz to get a divisor
+  uint32_t divisor = pclk / 2000000;
+
+  // Round divisor up to the nearest power of 2 to guarantee a value between 1 and 2 MHz
+  uint32_t br_bits;
+  if (divisor > 128) {
+    br_bits = SPI_CR1_BR_2 | SPI_CR1_BR_1 | SPI_CR1_BR_0;
+  }
+  else if (divisor > 64) {
+    br_bits = SPI_CR1_BR_2 | SPI_CR1_BR_1;
+  }
+  else if (divisor > 32) {
+    br_bits = SPI_CR1_BR_2 | SPI_CR1_BR_0;
+  }
+  else if (divisor > 16) {
+    br_bits = SPI_CR1_BR_2;
+  }
+  else if (divisor > 8) {
+    br_bits = SPI_CR1_BR_1 | SPI_CR1_BR_0;
+  }
+  else if (divisor > 4) {
+    br_bits = SPI_CR1_BR_1;
+  }
+  else if (divisor > 2) {
+    br_bits = SPI_CR1_BR_0;
+  }
+  else {
+    br_bits = 0x0;
+  }
+
+  cfg->reg->CR1 |= br_bits;
 }
 
 static inline void hal_spi_common_isr(spi_channel_t channel) {

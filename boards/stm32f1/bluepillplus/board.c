@@ -1,13 +1,29 @@
 #include <epsdkx/board.h>
 
+#include <epsdkx/generated/config.h>
+
 #include <stdint.h>
 
 #include "stm32f1xx.h"
+
 
 uint32_t SystemCoreClock;
 
 // Called automatically by startup code.
 void SystemInit(void) {
+#if defined (CONFIG_LOW_POWER)
+  // Set 8 MHz HSI clock on.
+  RCC->CR |= RCC_CR_HSION;
+  while (!(RCC->CR & RCC_CR_HSIRDY)) (void)0;
+
+  // Set 0 wait states
+  FLASH->ACR |= FLASH_ACR_PRFTBE;
+  FLASH->ACR &= ~(FLASH_ACR_LATENCY);
+
+  // Set SYSCLK to HSI
+  RCC->CFGR &= ~(RCC_CFGR_SW);
+  RCC->CFGR |= (RCC_CFGR_SW_HSI);
+#else
   // Set 8 MHz HSE clock on.
   RCC->CR |= RCC_CR_HSEON;
   while(!(RCC->CR & RCC_CR_HSERDY)) (void)0;
@@ -38,9 +54,14 @@ void SystemInit(void) {
   // Set SYSCLK to use PLL
   RCC->CFGR &= ~(RCC_CFGR_SW);
   RCC->CFGR |= (RCC_CFGR_SW_PLL);
+#endif
 }
 
 
 void SystemCoreClockUpdate(void) {
+#if defined (CONFIG_LOW_POWER)
+  SystemCoreClock = 8000000;
+#else
   SystemCoreClock = 72000000;
+#endif
 }
