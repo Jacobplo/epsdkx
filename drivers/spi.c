@@ -12,11 +12,22 @@ const spi_pins_s *spi_get_pins(spi_channel_t channel) {
   return hal_spi_get_pins(channel);
 }
 
-int spi_put(spi_channel_t channel, uint8_t tx) {
-  return hal_spi_put(channel, tx);
+int spi_read_write(spi_channel_t channel, uint8_t tx) {
+  return hal_spi_read_write(channel, tx);
 }
 
 int spi_get(spi_channel_t channel, uint8_t *rx) {
   return hal_spi_get(channel, rx);
 }
 
+int spi_readn_writen(spi_channel_t channel, uint8_t *tx, size_t n) {
+  int ret;
+
+  for (size_t i = 0; i < n; i++) { 
+    if ((ret = hal_spi_read_write(channel, tx[i])) < 0) {
+      return ret;
+    };
+  }
+
+  return 0;
+}

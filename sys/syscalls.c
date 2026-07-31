@@ -161,10 +161,10 @@ int _write(int file, char *ptr, int len) {
 
   for (int i = 0; i < len; i++) {
     if (ptr[i] == '\n') {
-      uart_put(UART(1), '\r');
+      uart_write(UART(1), '\r');
     }
 
-    uart_put(UART(1), ptr[i]);
+    uart_write(UART(1), ptr[i]);
   }
 #endif
     

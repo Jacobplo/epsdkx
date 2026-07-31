@@ -135,7 +135,7 @@ bool hal_i2c_is_busy(i2c_channel_t channel) {
   return cfg->reg->SR2 & I2C_SR2_BUSY;
 }
 
-int hal_i2c_putn(i2c_channel_t channel, uint8_t *tx, uint16_t n, uint16_t slave_address) {
+int hal_i2c_writen(i2c_channel_t channel, uint8_t *tx, uint16_t n, uint16_t slave_address) {
   if (I2C_CHANNEL_IDX(channel) >= I2C_CHANNEL_COUNT) return -EINVAL;
 
   hal_i2c_config_s *cfg = &i2c_pin_map[I2C_CHANNEL_IDX(channel)];
@@ -159,7 +159,7 @@ int hal_i2c_putn(i2c_channel_t channel, uint8_t *tx, uint16_t n, uint16_t slave_
   return 0;
 }
 
-int hal_i2c_getn(i2c_channel_t channel, uint16_t n, uint16_t slave_address) {
+int hal_i2c_readn(i2c_channel_t channel, uint16_t n, uint16_t slave_address) {
   if (I2C_CHANNEL_IDX(channel) >= I2C_CHANNEL_COUNT) return -EINVAL;
 
   hal_i2c_config_s *cfg = &i2c_pin_map[I2C_CHANNEL_IDX(channel)];

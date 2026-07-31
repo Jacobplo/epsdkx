@@ -144,7 +144,7 @@ const spi_pins_s *hal_spi_get_pins(spi_channel_t channel) {
   return &spi_pin_map[SPI_CHANNEL_IDX(channel)].pins;
 }
 
-int hal_spi_put(spi_channel_t channel, uint8_t tx) {
+int hal_spi_read_write(spi_channel_t channel, uint8_t tx) {
   if (SPI_CHANNEL_IDX(channel) >= SPI_CHANNEL_COUNT) return -EINVAL;
 
   hal_spi_config_s *cfg = &spi_pin_map[SPI_CHANNEL_IDX(channel)];

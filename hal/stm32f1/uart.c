@@ -110,7 +110,9 @@ const uart_pins_s *hal_uart_get_pins(uart_channel_t channel) {
   return &uart_pin_map[UART_CHANNEL_IDX(channel)].pins;
 }
 
-void hal_uart_put(uart_channel_t channel, uint8_t tx) {
+int hal_uart_write(uart_channel_t channel, uint8_t tx) {
+  if (UART_CHANNEL_IDX(channel) >= UART_CHANNEL_COUNT) return -EINVAL;
+
   hal_uart_config_s *cfg = &uart_pin_map[UART_CHANNEL_IDX(channel)];
 
   // Wait until data register is transferred to the transmission shift register.
@@ -118,6 +120,8 @@ void hal_uart_put(uart_channel_t channel, uint8_t tx) {
 
   // Write to data register
   cfg->reg->DR = tx;
+
+  return 0;
 }
 
 int hal_uart_get(uart_channel_t channel, uint8_t *rx) {

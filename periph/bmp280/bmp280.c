@@ -19,7 +19,7 @@
 
 
 static void bmp280_write(bmp280_dev_s *dev, bmp280_addr_e addr, uint8_t tx);
-static void bmp280_readn(bmp280_dev_s *dev, bmp280_addr_e addr, uint8_t *rx, uint8_t n);
+static void bmp280_readn(bmp280_dev_s *dev, bmp280_addr_e addr, uint8_t *rx, size_t n);
 static double bmp280_compensate_temperature(bmp280_dev_s *dev, int32_t adc_t);
 static double bmp280_compensate_pressure(bmp280_dev_s *dev, int32_t adc_p);
 static double bmp280_compensate_humidity(bmp280_dev_s *dev, int32_t adc_h);
@@ -132,24 +132,24 @@ static void bmp280_write(bmp280_dev_s *dev, bmp280_addr_e addr, uint8_t tx) {
     case BMP280_SPI:
       gpio_write(&dev->spi_csb, GPIO_LOW);
 
-      spi_put(dev->channel.spi, addr & 0x7F);
+      spi_read_write(dev->channel.spi, addr & 0x7F);
       while (spi_get(dev->channel.spi, &discard) < 0) (void)0;
 
-      spi_put(dev->channel.spi, tx);
+      spi_read_write(dev->channel.spi, tx);
       while (spi_get(dev->channel.spi, &discard) < 0) (void)0;
 
       gpio_write(&dev->spi_csb, GPIO_HIGH);
       break;
 
     case BMP280_I2C:
-      i2c_putn(dev->channel.i2c, i2c_packet, 2, dev->i2c_addr);
+      i2c_writen(dev->channel.i2c, i2c_packet, 2, dev->i2c_addr);
       while (i2c_is_busy(dev->channel.i2c)) (void)0;
       break;
   }
 }
 
-static void bmp280_readn(bmp280_dev_s *dev, bmp280_addr_e addr, uint8_t *rx, uint8_t n) {
-  int i;
+static void bmp280_readn(bmp280_dev_s *dev, bmp280_addr_e addr, uint8_t *rx, size_t n) {
+  size_t i;
   uint8_t discard;
 
   switch (dev->type) {
@@ -157,13 +157,11 @@ static void bmp280_readn(bmp280_dev_s *dev, bmp280_addr_e addr, uint8_t *rx, uin
       gpio_write(&dev->spi_csb, GPIO_LOW);
 
       // Select register address
-      spi_put(dev->channel.spi, addr | 0x80);
+      spi_read_write(dev->channel.spi, addr | 0x80);
       while (spi_get(dev->channel.spi, &discard) < 0) (void)0;
 
       // Read N bytes from sequential registers
-      for (i = 0; i < n; i++) {
-        spi_put(dev->channel.spi, 0);
-      }
+      spi_readn_writen(dev->channel.spi, 0, n);
 
       // Get RX data
       for (i = 0; i < n; i++) {
@@ -176,11 +174,11 @@ static void bmp280_readn(bmp280_dev_s *dev, bmp280_addr_e addr, uint8_t *rx, uin
 
     case BMP280_I2C:
       // Select register address
-      i2c_putn(dev->channel.i2c, (uint8_t *)&addr, 1, dev->i2c_addr);
+      i2c_write(dev->channel.i2c, addr, dev->i2c_addr);
       while (i2c_is_busy(dev->channel.i2c)) (void)0;
 
       // Read N bytes from sequential registers
-      i2c_getn(dev->channel.i2c, n, dev->i2c_addr);
+      i2c_readn(dev->channel.i2c, n, dev->i2c_addr);
       while (i2c_is_busy(dev->channel.i2c)) (void)0;
 
       // Get RX data

@@ -21,10 +21,14 @@ const i2c_pins_s *i2c_get_pins(i2c_channel_t channel);
 
 bool i2c_is_busy(i2c_channel_t channel);
 
-int i2c_putn(i2c_channel_t channel, uint8_t *tx, uint16_t n, uint16_t slave_address);
+int i2c_writen(i2c_channel_t channel, uint8_t *tx, uint16_t n, uint16_t slave_address);
 
-int i2c_getn(i2c_channel_t channel, uint16_t n, uint16_t slave_address);
+int i2c_readn(i2c_channel_t channel, uint16_t n, uint16_t slave_address);
 
 int i2c_get(i2c_channel_t channel, uint8_t *rx);
+
+int i2c_write(i2c_channel_t channel, uint8_t tx, uint16_t slave_address);
+
+int i2c_read(i2c_channel_t channel, uint16_t slave_address);
 
 #endif
