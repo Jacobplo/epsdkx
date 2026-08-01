@@ -1,8 +1,8 @@
 /**
  * Public API for the GPIO driver.
  *
- * Unless otherwise stated, all functions return a negative errno on error,
- * and 0 on success.
+ * Unless otherwise stated, all functions that return int return a negative
+ * errno on error, and 0 on success.
  */
 
 #ifndef _EPSDKX_GPIO_H

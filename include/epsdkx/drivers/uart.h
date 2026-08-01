@@ -4,8 +4,8 @@
  * Received UART data is asynchronously put into the internal RX buffer,
  * and can be retrieved with uart_get().
  *
- * Unless otherwise stated, all functions return a negative errno on error,
- * and 0 on success.
+ * Unless otherwise stated, all functions that return int return a negative
+ * errno on error, and 0 on success.
  */
 
 #ifndef _EPSDKX_UART_H

@@ -5,8 +5,8 @@
  * at the bottom of the file, and should be used instead of the generic
  * functions to make intent explicit.
  *
- * Unless otherwise stated, all functions return a negative errno on error,
- * and 0 on success.
+ * Unless otherwise stated, all functions that return int return a negative
+ * errno on error, and 0 on success.
  */
 
 #ifndef _EPSDKX_I2C_H
