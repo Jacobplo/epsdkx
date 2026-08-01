@@ -20,8 +20,6 @@ void gpio_init(void);
 
 /**
  * Configures a GPIO pin to user a given input or output mode.
- *
- * Returns -EINVAL if the mode is not supported on the hardware.
  */
 int gpio_configure(gpio_pin_u *pin, gpio_mode_e mode);
 
