@@ -32,6 +32,8 @@
  * provides timing parameters in its Kconfig file. For example, 
  * CONFIG_STM32F1_I2C_CCR contains the value of the I2C CCR for STM32F1 targets,
  * as found on the board datasheet.
+ *
+ * In slave mode: the provided address should be a 7-bit address.
  */
 int hal_i2c_init(i2c_channel_t channel, i2c_mode_e mode, uint16_t address);
 
