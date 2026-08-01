@@ -1,3 +1,11 @@
+/**
+ * Public API driver for the BMP280 temperature / pressure sensor,
+ * and BME280, which additionally has humidity sensing.
+ *
+ * Unless otherwise stated, all functions that return int should return a
+ * negative errno on error, and 0 on success.
+ */
+
 #ifndef _EPSDKX_PERIPH_BMP280_H
 #define _EPSDKX_PERIPH_BMP280_H
 
@@ -67,17 +75,43 @@ typedef enum bmp280_addr_e {
 } bmp280_addr_e;
 
 
+/**
+ * Initializes the provided SPI interface in a master configuration to use with
+ * the sensor.
+ *
+ * dev should be declared empty by the user. It stores data about the device 
+ * and interface.
+ *
+ * csb is the chip select pin.
+ */
 int bmp280_init_spi(bmp280_dev_s *dev, spi_channel_t channel, gpio_pin_u csb);
 
+
+/**
+ * Intializes the provided I2C interface in a master configuration to use with
+ * the sensor.
+ *
+ * dev should be declared empty by the user. It stores data about the device 
+ * and interface.
+ *
+ * sdo_state should be the logic level of the SDO sensor pin, so that the I2C
+ * device address can be determined.
+ */
 int bmp280_init_i2c(bmp280_dev_s *dev, i2c_channel_t channel, gpio_state_e sdo_state);
 
-// Returns temperature data in degrees Celsius
+/**
+ * Returns temperature data in degrees Celsius
+ */
 double bmp280_get_temperature(bmp280_dev_s *dev);
 
-// Returns pressure data in Pascals
+/**
+ * Returns pressure data in Pascals
+ */
 double bmp280_get_pressure(bmp280_dev_s *dev);
 
-// Returns pressure data in percentage relative humidity
+/**
+ * Returns humidity data in percentage relative humidity
+ */
 double bmp280_get_humidity(bmp280_dev_s *dev);
 
 #endif
