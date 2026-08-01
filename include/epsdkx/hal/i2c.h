@@ -26,6 +26,12 @@
 /**
  * Should initialize the given I2C channel only, with the provided mode,
  * and if in slave mode, with the provided address.
+ *
+ * In master mode: Should be configured in fast mode at 400 kHz. To ensure that
+ * this can be reasonably achieved, it can be expected that the each board
+ * provides timing parameters in its Kconfig file. For example, 
+ * CONFIG_STM32F1_I2C_CCR contains the value of the I2C CCR for STM32F1 targets,
+ * as found on the board datasheet.
  */
 int hal_i2c_init(i2c_channel_t channel, i2c_mode_e mode, uint16_t address);
 
