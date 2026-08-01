@@ -1,3 +1,12 @@
+/**
+ * Implements a circular buffer that should be used for receiving data from 
+ * communication protocols, such as I2C, SPI, UART.
+ *
+ * Should discard new data if the buffer is full.
+ *
+ * Not intended for use outside of the HAL.
+ */
+
 #ifndef _EPSDKX_HAL_RX_BUFFER_H
 #define _EPSDKX_HAL_RX_BUFFER_H
 
