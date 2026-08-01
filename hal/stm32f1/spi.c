@@ -3,9 +3,9 @@
 #include <epsdkx/hal/spi.h>
 
 #include <epsdkx/hal/gpio.h>
+#include <epsdkx/hal/rx_buffer.h>
 #include <epsdkx/generated/config.h>
 #include "private/nvic.h"
-#include "private/rx_buffer.h"
 #include "private/rcc.h"
 
 #include <errno.h>
