@@ -34,6 +34,9 @@
  * as found on the board datasheet.
  *
  * In slave mode: the provided address should be a 7-bit address.
+ *
+ * It is expected that this function be called before any other i2c function
+ * at the user-level.
  */
 int hal_i2c_init(i2c_channel_t channel, i2c_mode_e mode, uint16_t address);
 

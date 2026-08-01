@@ -31,6 +31,9 @@
  * the 1-2 MHz range, or as close to that range as possible. The interface
  * should not be configured with slave select pins, because those are
  * expected to be the responsibility of user-level code.
+ *
+ * It is expected that this function be called before any other spi function
+ * at the user-level.
  */
 int hal_spi_init(spi_channel_t channel, spi_mode_e mode, spi_cpol_e cpol, spi_cpha_e cpha);
 

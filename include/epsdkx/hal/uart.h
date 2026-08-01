@@ -26,6 +26,9 @@
  * Should initialize the given UART channel only, with the provided baud rate.
  *
  * Should use an 8-bit word length, with 1 stop bit and 0 parity bits.
+ *
+ * It is expected that this function be called before any other uart function
+ * at the user-level.
  */
 int hal_uart_init(uart_channel_t channel, uint32_t baud_rate);
 
