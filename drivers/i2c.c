@@ -30,8 +30,8 @@ int i2c_get(i2c_channel_t channel, uint8_t *rx) {
   return hal_i2c_get(channel, rx);
 }
 
-int i2c_write(i2c_channel_t channel, uint8_t tx, uint16_t slave_address) {
-  return hal_i2c_writen(channel, &tx, 1, slave_address);
+int i2c_write(i2c_channel_t channel, uint8_t *tx, uint16_t slave_address) {
+  return hal_i2c_writen(channel, tx, 1, slave_address);
 }
 
 int i2c_read(i2c_channel_t channel, uint16_t slave_address) {

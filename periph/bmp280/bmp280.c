@@ -174,7 +174,7 @@ static void bmp280_readn(bmp280_dev_s *dev, bmp280_addr_e addr, uint8_t *rx, siz
 
     case BMP280_I2C:
       // Select register address
-      i2c_write_master(dev->channel.i2c, addr, dev->i2c_addr);
+      i2c_write_master(dev->channel.i2c, (uint8_t *)&addr, dev->i2c_addr);
       while (i2c_is_busy(dev->channel.i2c)) (void)0;
 
       // Read N bytes from sequential registers

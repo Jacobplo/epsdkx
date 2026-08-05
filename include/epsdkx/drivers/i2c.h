@@ -50,7 +50,7 @@ int i2c_readn(i2c_channel_t channel, uint16_t n, uint16_t slave_address);
  * Prefer using the i2c_write_master() / i2c_write_slave() wrappers to make 
  * intent more explicit.
  */
-int i2c_write(i2c_channel_t channel, uint8_t tx, uint16_t slave_address);
+int i2c_write(i2c_channel_t channel, uint8_t *tx, uint16_t slave_address);
 
 /**
  * Receives a single byte of data into an internal RX buffer. 
@@ -106,11 +106,11 @@ static inline int i2c_readn_slave(i2c_channel_t channel, uint16_t n) {
   return i2c_readn(channel, n, 0);
 }
 
-static inline int i2c_write_master(i2c_channel_t channel, uint8_t tx, uint16_t slave_address) {
+static inline int i2c_write_master(i2c_channel_t channel, uint8_t *tx, uint16_t slave_address) {
   return i2c_write(channel, tx, slave_address);
 }
 
-static inline int i2c_write_slave(i2c_channel_t channel, uint8_t tx) {
+static inline int i2c_write_slave(i2c_channel_t channel, uint8_t *tx) {
   return i2c_write(channel, tx, 0);
 }
 
