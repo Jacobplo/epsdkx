@@ -142,8 +142,8 @@ static void bmp280_write(bmp280_dev_s *dev, bmp280_addr_e addr, uint8_t tx) {
       break;
 
     case BMP280_I2C:
-      i2c_writen_master(dev->channel.i2c, i2c_packet, 2, dev->i2c_addr);
       while (i2c_is_busy(dev->channel.i2c)) (void)0;
+      i2c_writen_master(dev->channel.i2c, i2c_packet, 2, dev->i2c_addr);
       break;
   }
 }
@@ -173,13 +173,13 @@ static void bmp280_readn(bmp280_dev_s *dev, bmp280_addr_e addr, uint8_t *rx, siz
       break;
 
     case BMP280_I2C:
+      while (i2c_is_busy(dev->channel.i2c)) (void)0;
       // Select register address
       i2c_write_master(dev->channel.i2c, (uint8_t *)&addr, dev->i2c_addr);
-      while (i2c_is_busy(dev->channel.i2c)) (void)0;
 
+      while (i2c_is_busy(dev->channel.i2c)) (void)0;
       // Read N bytes from sequential registers
       i2c_readn_master(dev->channel.i2c, n, dev->i2c_addr);
-      while (i2c_is_busy(dev->channel.i2c)) (void)0;
 
       // Get RX data
       for (i = 0; i < n; i++) {
