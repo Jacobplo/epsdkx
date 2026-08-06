@@ -28,7 +28,8 @@ typedef struct hal_i2c_data_s{
   uint8_t *tx;
   volatile uint16_t i;
   uint16_t n;
-  bool send;
+  volatile bool send;
+  volatile bool busy;
 
   hal_rx_buffer_s rx_buf; 
 } hal_i2c_data_s;
@@ -126,7 +127,7 @@ const i2c_pins_s *hal_i2c_get_pins(i2c_channel_t channel) {
 bool hal_i2c_is_busy(i2c_channel_t channel) {
   hal_i2c_config_s *cfg = &i2c_pin_map[I2C_CHANNEL_IDX(channel)];
 
-  return cfg->reg->SR2 & I2C_SR2_BUSY;
+  return (cfg->reg->SR2 & I2C_SR2_BUSY) || cfg->data.busy;
 }
 
 int hal_i2c_writen(i2c_channel_t channel, uint8_t *tx, uint16_t n, uint16_t slave_address) {
@@ -135,12 +136,13 @@ int hal_i2c_writen(i2c_channel_t channel, uint8_t *tx, uint16_t n, uint16_t slav
   hal_i2c_config_s *cfg = &i2c_pin_map[I2C_CHANNEL_IDX(channel)];
 
   // Previous transmission not yet completed
-  if (cfg->reg->SR2 & I2C_SR2_BUSY) return -EBUSY;
+  if (hal_i2c_is_busy(channel)) return -EBUSY;
 
   cfg->data.tx = tx;
   cfg->data.i = 0;
   cfg->data.n = n;
   cfg->data.send = true;
+  cfg->data.busy = true;
 
   if (cfg->mode == I2C_MASTER) {
     cfg->data.target = (slave_address << 1u);
@@ -159,11 +161,12 @@ int hal_i2c_readn(i2c_channel_t channel, uint16_t n, uint16_t slave_address) {
   hal_i2c_config_s *cfg = &i2c_pin_map[I2C_CHANNEL_IDX(channel)];
 
   // Previous transmission not yet completed
-  if (cfg->reg->SR2 & I2C_SR2_BUSY) return -EBUSY;
+  if (hal_i2c_is_busy(channel)) return -EBUSY;
 
   cfg->data.i = 0;
   cfg->data.n = n;
   cfg->data.send = false;
+  cfg->data.busy = true;
 
   if (cfg->mode == I2C_MASTER) {
     cfg->data.target = (slave_address << 1u) | 0x1;
@@ -220,6 +223,7 @@ static inline void hal_i2c_event_isr(i2c_channel_t channel) {
       if (cfg->data.n == 1) {
         cfg->reg->CR1 &= ~(I2C_CR1_ACK);
         cfg->reg->CR1 |= I2C_CR1_STOP;
+        cfg->data.busy = false;
       }
     }
     // Transmitter (master / slave)
@@ -238,6 +242,7 @@ static inline void hal_i2c_event_isr(i2c_channel_t channel) {
     // Send STOP signal (master)
     else if (cfg->mode == I2C_MASTER && cfg->reg->SR1 & I2C_SR1_BTF) {
       cfg->reg->CR1 |= I2C_CR1_STOP;
+      cfg->data.busy = false;
     }
   }
 
@@ -247,15 +252,21 @@ static inline void hal_i2c_event_isr(i2c_channel_t channel) {
     hal_rx_buffer_put(&cfg->data.rx_buf, cfg->reg->DR);
 
     // Generate NACK and STOP after receiving the second to last byte (master)
-    if (cfg->mode == I2C_MASTER && (++cfg->data.i == cfg->data.n - 1)) {
-      cfg->reg->CR1 &= ~(I2C_CR1_ACK);
-      cfg->reg->CR1 |= I2C_CR1_STOP;
+    if (cfg->mode == I2C_MASTER) {
+      if (++cfg->data.i == cfg->data.n - 1) {
+        cfg->reg->CR1 &= ~(I2C_CR1_ACK);
+        cfg->reg->CR1 |= I2C_CR1_STOP;
+      }
+      else if (cfg->data.i == cfg->data.n) {
+        cfg->data.busy = false;
+      }
     }
   }
 
   // Slave must write to CR1 after STOP signal
   else if (cfg->reg->SR1 & I2C_SR1_STOPF) {
     cfg->reg->CR1 |= I2C_CR1_PE;
+    cfg->data.busy = false;
   }
 }
 
@@ -273,31 +284,37 @@ static inline void hal_i2c_error_isr(i2c_channel_t channel) {
   // Bus error (misplaced START or STOP condition)
   if (cfg->reg->SR1 & I2C_SR1_BERR) {
     cfg->reg->SR1 &= ~(I2C_SR1_BERR);
+    cfg->data.busy = false;
   }
 
   // Arbitration lost (master)
   else if (cfg->reg->SR1 & I2C_SR1_ARLO) {
     cfg->reg->SR1 &= ~(I2C_SR1_ARLO);
+    cfg->data.busy = false;
   }
 
   // Timeout
   else if (cfg->reg->SR1 & I2C_SR1_TIMEOUT) {
     cfg->reg->SR1 &= ~(I2C_SR1_TIMEOUT);
+    cfg->data.busy = false;
   }
 
   // Acknowledge failure
   else if (cfg->reg->SR1 & I2C_SR1_AF) {
     cfg->reg->SR1 &= ~(I2C_SR1_AF);
+    cfg->data.busy = false;
   }
 
   // Overrun / underrun
   else if (cfg->reg->SR1 & I2C_SR1_OVR) {
     cfg->reg->SR1 &= ~(I2C_SR1_OVR);
+    cfg->data.busy = false;
   }
 
   // PEC error in reception
   else if (cfg->reg->SR1 & I2C_SR1_PECERR) {
     cfg->reg->SR1 &= ~(I2C_SR1_PECERR);
+    cfg->data.busy = false;
   }
 }
 
