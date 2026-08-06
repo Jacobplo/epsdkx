@@ -5,6 +5,7 @@
 #include <epsdkx/hal/rx_buffer.h>
 #include <epsdkx/generated/config.h>
 #include "private/nvic.h"
+#include "private/rcc.h"
 
 #include <epsdkx/hal/time.h>
 #include <stdbool.h>
@@ -17,10 +18,6 @@
 
 #ifndef CONFIG_GPIO
 #error Must enable CONFIG_GPIO to use GPIO
-#endif
-
-#ifndef CONFIG_STM32F1_I2C_CCR
-#error Must set CONFIG_STM32F1_I2C_CCR in the board Kconfig, as defined in the datasheet
 #endif
 
 #define I2C_CHANNEL_IDX(n) ((n) - 1)
@@ -67,6 +64,7 @@ static hal_i2c_config_s i2c_pin_map[I2C_CHANNEL_COUNT] = {
   },
 };
 
+static void hal_i2c_set_timings(i2c_channel_t channel);
 static inline void hal_i2c_event_isr(i2c_channel_t channel);
 static inline void hal_i2c_error_isr(i2c_channel_t channel);
 
@@ -81,12 +79,7 @@ int hal_i2c_init(i2c_channel_t channel, i2c_mode_e mode, uint16_t address) {
 
   hal_gpio_init();
   hal_gpio_configure(&cfg->pins.scl, GPIO_OUT_ALT_OPEN_DRAIN);
-  hal_gpio_configure(&cfg->pins.sda, GPIO_OUT_ALT_OPEN_DRAIN);
-
-  // Set I2C clock frequency to 10 MHz
-  cfg->reg->CR2 |= (I2C_CR2_FREQ_3 | I2C_CR2_FREQ_1);
-  // Set rise time based on the 10 MHz frequency
-  cfg->reg->TRISE = 0x4;
+  hal_gpio_configure(&cfg->pins.sda, GPIO_OUT_ALT_OPEN_DRAIN); 
 
   // Set to SMBus mode
   cfg->reg->CR1 |= I2C_CR1_SMBUS;
@@ -103,12 +96,13 @@ int hal_i2c_init(i2c_channel_t channel, i2c_mode_e mode, uint16_t address) {
       cfg->mode = I2C_SLAVE;
       break;
 
-    case I2C_MASTER:
-      // Configure clock using board parameters
-      cfg->reg->CCR = CONFIG_STM32F1_I2C_CCR; 
+    case I2C_MASTER: 
       cfg->mode = I2C_MASTER;
       break;
   }
+
+  // Called after mode is set.
+  hal_i2c_set_timings(channel);
 
   // Enable interrupt
   cfg->reg->CR2 |= I2C_CR2_ITEVTEN;
@@ -188,6 +182,25 @@ int hal_i2c_get(i2c_channel_t channel, uint8_t *rx) {
   hal_i2c_config_s *cfg = &i2c_pin_map[I2C_CHANNEL_IDX(channel)];
 
   return hal_rx_buffer_get(&cfg->data.rx_buf, rx);
+}
+
+static void hal_i2c_set_timings(i2c_channel_t channel) {
+  hal_i2c_config_s *cfg = &i2c_pin_map[I2C_CHANNEL_IDX(channel)];
+
+  uint32_t pclk = hal_rcc_get_pclk1();
+  uint16_t freq_mhz = pclk / 1000000;
+
+  // Set I2C clock frequency to PCLK frequency
+  cfg->reg->CR2 = freq_mhz;
+
+  // Set rise time based pclk frequency and standard mode max rise time of 1000 ns
+  cfg->reg->TRISE = freq_mhz + 1;
+
+  if (cfg->mode == I2C_MASTER) {
+    // Width of half a period at 100 kHz is 5000 ns, so CCR must multiply with
+    // PCLK period to get 5000 ns
+    cfg->reg->CCR = 5 * freq_mhz;
+  }
 }
 
 static inline void hal_i2c_event_isr(i2c_channel_t channel) {
