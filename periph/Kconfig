@@ -1,2 +1,5 @@
 config PERIPH_BMP280
   bool "BMP280 temperature / pressure sensor"
+
+config PERIPH_NEO6
+  bool "u-blox Neo-6 GPS reciever"
