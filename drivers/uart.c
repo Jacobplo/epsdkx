@@ -33,3 +33,8 @@ int uart_writen(uart_channel_t channel, const uint8_t *tx, size_t n) {
 
   return 0;
 }
+
+void uart_flush(uart_channel_t channel) {
+  uint8_t discard;
+  while (uart_get(channel, &discard) >= 0);
+}

@@ -85,9 +85,7 @@ int at6558_init(at6558_dev_s *dev, uart_channel_t channel) {
       time_delay_ms(5);
     }
 
-    // Flush UART buffer
-    uint8_t discard;
-    while (uart_get(dev->channel, &discard) >= 0);
+    uart_flush(dev->channel);
   }
 
   return ret;
