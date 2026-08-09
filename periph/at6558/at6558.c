@@ -19,6 +19,7 @@
 
 #include <string.h>
 #include <stddef.h>
+#include <errno.h>
 
 
 #if !defined (CONFIG_UART)
@@ -54,7 +55,7 @@ static const char *const nmea_init_messages[NMEA_INIT_MESSAGES_SIZE] = {
 /**
  * Reads a communication frame from the UART interface into dev->frame.
  */
-static void at6558_read_frame(at6558_dev_s *dev);
+static void at6558_read_frame(at6558_dev_s *dev, size_t n);
 
 
 /**
@@ -75,7 +76,35 @@ static void at6558_csip_construct_frame(at6558_dev_s *dev, at6558_csip_message_e
  */
 static uint32_t at6558_csip_compute_checksum(const uint8_t *frame);
 
-static void at6558_parse_nav_pv_payload(at6558_dev_s *dev, at6558_csip_message_e message);
+/**
+ * Parses dev->frame as if its an ACK message type.
+ *
+ * Returns -EINVAL if dev->frame is not an ACK message.
+ * Returns -EAGAIN if dev->frame is an ACK-NACK message. 
+ * Retruns -EAGAIN if the checksum does not match.
+ * Returns 0 otherwise.
+ */
+static int at6558_parse_ack(at6558_dev_s *dev);
+
+
+/**
+ * Parses dev->frame as if its a NAV-PV message type, cleanly into datum fields.
+ *
+ * Returns -EINVAL if dev->frame is not a NAV-PV message.
+ * Returns -EAGAIN if the checksum does not match.
+ * Returns 0 otherwise.
+ */
+static int at6558_parse_nav_pv(at6558_dev_s *dev, at6558_datum_s *datum);
+
+/**
+ * Parses dev->frame as if its a NAV-TIMEUTC message type, cleanly into datum
+ * fields.
+ *
+ * Returns -EINVAL if dev->frame is not a NAV-TIMEUTC message.
+ * Returns -EAGAIN if the checksum does not match.
+ * Returns 0 otherwise.
+ */
+static int at6558_parse_nav_timeutc(at6558_dev_s *dev, at6558_utc_time_s *time);
 
 
 int at6558_init(at6558_dev_s *dev, uart_channel_t channel) {
@@ -107,14 +136,43 @@ int at6558_init(at6558_dev_s *dev, uart_channel_t channel) {
 }
 
 int at6558_get_gps_datum(at6558_dev_s *dev, at6558_datum_s *datum) {
-  (void)dev;
-  (void)datum;
+  int ret = 0;
 
-  return 0;
+  // Poll for UTC time
+  at6558_csip_construct_frame(dev, AT6558_POLL_NAV_TIMEUTC);
+
+  // Receive and parse ACK message
+  at6558_read_frame(dev, AT6558_LEN_ACK); 
+  ret = at6558_parse_ack(dev);
+
+  if (ret >= 0) {
+    // Receive and parse NAV-TIMEUTC message
+    at6558_read_frame(dev, AT6558_LEN_NAV_TIMEUTC);
+    ret = at6558_parse_nav_timeutc(dev, &datum->time);
+  }
+
+  if (ret >= 0) {
+    // Poll for geodetic position and velocity information
+    at6558_csip_construct_frame(dev, AT6558_POLL_NAV_PV);
+
+    // Receive and parse ACK message
+    at6558_read_frame(dev, AT6558_LEN_ACK); 
+    ret = at6558_parse_ack(dev);
+  }
+
+  if (ret >= 0) {
+  // Receive and parse NAV-PV message
+    at6558_read_frame(dev, AT6558_LEN_NAV_PV);
+    ret = at6558_parse_nav_pv(dev, datum);
+  }
+
+  return ret;
 }
 
-static void at6558_read_frame(at6558_dev_s *dev) {
-  (void)dev;  
+static void at6558_read_frame(at6558_dev_s *dev, size_t n) {
+  for (size_t i = 0; i < n; i++) {
+    while (uart_get(dev->channel, dev->frame + i) < 0) (void)0;
+  }
 }
 
 static void at6558_write_frame(at6558_dev_s *dev, size_t n) {
@@ -131,11 +189,11 @@ static void at6558_csip_construct_frame(at6558_dev_s *dev, at6558_csip_message_e
   // Message length minus the checksum. Header + length + type = 6.
   const size_t len = payload_len + 6;
 
-  const uint32_t ckSum = at6558_csip_compute_checksum(frame);
-  const uint8_t ckSumSplit[4] = { SPLIT4(ckSum) };
+  const uint32_t cksum = at6558_csip_compute_checksum(frame);
+  const uint8_t cksum_split[4] = { SPLIT4(cksum) };
 
   memcpy(dev->frame, frame, len);
-  memcpy(dev->frame + len, ckSumSplit, 4);
+  memcpy(dev->frame + len, cksum_split, 4);
 
   at6558_write_frame(dev, len + 4);
 }
@@ -143,10 +201,50 @@ static void at6558_csip_construct_frame(at6558_dev_s *dev, at6558_csip_message_e
 static uint32_t at6558_csip_compute_checksum(const uint8_t *frame) {
   const size_t payload_len = JOIN2(&frame[CSIP_LEN_POS]);
 
-  uint32_t ckSum = (frame[CSIP_ID_POS] << 24) + (frame[CSIP_CLASS_POS] << 16) + payload_len;
+  uint32_t cksum = (frame[CSIP_ID_POS] << 24) + (frame[CSIP_CLASS_POS] << 16) + payload_len;
   for (size_t i = 0; i < payload_len; i += 4) {
-    ckSum += JOIN4(&frame[CSIP_PAYLOAD_POS + i]);
+    cksum += JOIN4(&frame[CSIP_PAYLOAD_POS + i]);
   }
 
-  return ckSum;
+  return cksum;
+}
+
+static int at6558_parse_ack(at6558_dev_s *dev) {
+  int ret = 0;
+
+  const uint32_t computed_cksum = at6558_csip_compute_checksum(dev->frame);
+  const uint32_t received_cksum = JOIN4(&dev->frame[AT6558_LEN_ACK - 4]);
+
+  const at6558_cisp_class_e class = dev->frame[CSIP_CLASS_POS];
+  const at6558_cisp_id_e id = dev->frame[CSIP_ID_POS]; 
+
+  if (computed_cksum != received_cksum) {
+    ret = -EAGAIN;
+  }
+  else if (class != AT6558_ACK) {
+    ret = -EINVAL;
+  }
+  else if (id == AT6558_ACK_NACK) {
+    ret = -EAGAIN;
+  }
+
+  return ret;
+}
+
+static int at6558_parse_nav_pv(at6558_dev_s *dev, at6558_datum_s *datum) {
+  int ret = 0;
+
+  (void)dev;
+  (void)datum;
+
+  return ret;
+}
+
+static int at6558_parse_nav_timeutc(at6558_dev_s *dev, at6558_utc_time_s *time) {
+  int ret = 0;
+
+  (void)dev;
+  (void)time;
+
+  return ret;
 }

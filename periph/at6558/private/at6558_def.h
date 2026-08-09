@@ -1,6 +1,9 @@
 #ifndef _EPSDKX_PERIPH_AT6558_DEF_H
 #define _EPSDKX_PERIPH_AT6558_DEF_H
 
+/**
+ * CSIP message class
+ */
 typedef enum at6558_cisp_class_e {
   AT6558_NAV = 0x01,
   AT6558_TIM = 0x02,
@@ -12,11 +15,27 @@ typedef enum at6558_cisp_class_e {
   AT6558_AID = 0x0B,
 } at6558_cisp_class_e;
 
+/**
+ * CSIP message id
+ *
+ * Only ids used in the driver need to be included.
+ */
 typedef enum at6558_cisp_id_e {
-  AT6558_NAV_PV = 0x03,
+  AT6558_NAV_PV      = 0x03,
   AT6558_NAV_TIMEUTC = 0x10,
-  AT6558_CFG_MSG = 0x01,
+  AT6558_CFG_MSG     = 0x01,
+  AT6558_ACK_NACK    = 0x00,
+  AT6558_ACK_ACK     = 0x01,
 } at6558_cisp_id_e;
+
+/**
+ * The size of a full CSIP frame, including all fields, in bytes.
+ */
+typedef enum at6558_cisp_frame_len_e {
+  AT6558_LEN_NAV_PV      = 88,
+  AT6558_LEN_NAV_TIMEUTC = 32,
+  AT6558_LEN_ACK         = 12,
+} at6558_cisp_frame_len_e;
 
 #define CSIP_HEADER      0xBA, 0xCE
 
