@@ -14,6 +14,7 @@ typedef enum at6558_cisp_class_e {
 
 typedef enum at6558_cisp_id_e {
   AT6558_NAV_PV = 0x03,
+  AT6558_NAV_TIMEUTC = 0x10,
   AT6558_CFG_MSG = 0x01,
 } at6558_cisp_id_e;
 
@@ -28,7 +29,6 @@ typedef enum at6558_cisp_id_e {
 #define JOIN4(n)         (BYTE_JOIN(n, 0) | BYTE_JOIN(n, 1) | BYTE_JOIN(n, 2) | BYTE_JOIN(n, 3))
 
 #define CSIP_LEN(n)      SPLIT2(n)
-#define CSIP_CKSUM(n)    SPLIT4(n)
 
 #define CSIP_HEADER_POS  0
 #define CSIP_LEN_POS     2
@@ -37,6 +37,7 @@ typedef enum at6558_cisp_id_e {
 #define CSIP_PAYLOAD_POS 6
 
 #define NAV_PV           AT6558_NAV, AT6558_NAV_PV
+#define NAV_TIMEUTC      AT6558_NAV, AT6558_NAV_TIMEUTC
 #define CFG_MSG          AT6558_CFG, AT6558_CFG_MSG
 
 #endif

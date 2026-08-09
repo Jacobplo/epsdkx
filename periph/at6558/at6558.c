@@ -20,6 +20,7 @@
 
 typedef enum at6558_csip_message_e {
   AT6558_POLL_NAV_PV,
+  AT6558_POLL_NAV_TIMEUTC,
 
   AT6558_MESSAGE_COUNT,
 } at6558_csip_message_e;
@@ -28,8 +29,10 @@ typedef enum at6558_csip_message_e {
  * Contains pre-defined CSIP messages used by the driver, without a checksum.
  */
 static const uint8_t *const csip_messages[AT6558_MESSAGE_COUNT] = {
-    [AT6558_POLL_NAV_PV] = (const uint8_t[]){CSIP_HEADER, CSIP_LEN(4), CFG_MSG,
-                                             NAV_PV, 0xFF, 0xFF},
+  [AT6558_POLL_NAV_PV]      = (const uint8_t[]){CSIP_HEADER, CSIP_LEN(4), CFG_MSG,
+                                                NAV_PV, 0xFF, 0xFF},
+  [AT6558_POLL_NAV_TIMEUTC] = (const uint8_t[]){CSIP_HEADER, CSIP_LEN(4), CFG_MSG,
+                                                NAV_TIMEUTC, 0xFF, 0xFF},
 };
 
 #define NMEA_INIT_MESSAGES_SIZE 1

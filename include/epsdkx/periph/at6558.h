@@ -22,7 +22,7 @@ typedef struct at6558_dev_s {
 } at6558_dev_s;
 
 /**
- * Error variances for GPS datum fields
+ * Error variances for geodetic coordinate system fields
  */
 typedef struct at6558_variance_s {
   float horizontal_pos; ///< Variance of horizontal position error in m^2
@@ -32,7 +32,20 @@ typedef struct at6558_variance_s {
 } at6558_variance_s;
 
 /**
- * GPS datum fields
+ * UTC time stamp of a particular GPS datum
+ */
+typedef struct at6558_utc_time_s {
+  uint16_t year;
+  uint8_t month;
+  uint8_t day;
+  uint8_t hour;
+  uint8_t min;
+  uint8_t sec;
+  uint16_t ms;
+} at6558_utc_time_s;
+
+/**
+ * Geodetic coordinate system position and velocity information
  */
 typedef struct at6558_datum_s {
   float dop;          ///< Dilution of position
@@ -46,6 +59,7 @@ typedef struct at6558_datum_s {
   float ground_speed; ///< Ground speed in meters per second
   float heading;      ///< Heading in degrees
   at6558_variance_s var;
+  at6558_utc_time_s time;
 } at6558_datum_s;
 
 /**
@@ -56,5 +70,10 @@ typedef struct at6558_datum_s {
  * and interface.
  */
 int at6558_init(at6558_dev_s *dev, uart_channel_t channel);
+
+/**
+ * Polls the GPS receiver for geodetic coordinate system information.
+ */
+int at6558_get_gps_datum(at6558_dev_s *dev, at6558_datum_s *datum);
 
 #endif
