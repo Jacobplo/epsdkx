@@ -92,6 +92,7 @@ static int at6558_parse_ack(at6558_dev_s *dev);
  *
  * Returns -EINVAL if dev->frame is not a NAV-PV message.
  * Returns -EAGAIN if the checksum does not match.
+ * Returns -EAGAIN if the payload has invalid data.
  * Returns 0 otherwise.
  */
 static int at6558_parse_nav_pv(at6558_dev_s *dev, at6558_datum_s *datum);
@@ -102,6 +103,7 @@ static int at6558_parse_nav_pv(at6558_dev_s *dev, at6558_datum_s *datum);
  *
  * Returns -EINVAL if dev->frame is not a NAV-TIMEUTC message.
  * Returns -EAGAIN if the checksum does not match.
+ * Returns -EAGAIN if the payload has invalid data.
  * Returns 0 otherwise.
  */
 static int at6558_parse_nav_timeutc(at6558_dev_s *dev, at6558_utc_time_s *time);
@@ -234,8 +236,43 @@ static int at6558_parse_ack(at6558_dev_s *dev) {
 static int at6558_parse_nav_pv(at6558_dev_s *dev, at6558_datum_s *datum) {
   int ret = 0;
 
-  (void)dev;
-  (void)datum;
+  const uint32_t computed_cksum = at6558_csip_compute_checksum(dev->frame);
+  const uint32_t received_cksum = JOIN4(&dev->frame[AT6558_LEN_ACK - 4]);
+
+  const at6558_cisp_class_e class = dev->frame[CSIP_CLASS_POS];
+  const at6558_cisp_id_e id = dev->frame[CSIP_ID_POS];
+
+  const uint8_t *payload = &dev->frame[CSIP_PAYLOAD_POS];
+
+  if (computed_cksum != received_cksum) {
+    ret = -EAGAIN;
+  }
+  else if (class != AT6558_NAV && id != AT6558_NAV_PV) {
+    ret = -EINVAL;
+  }
+ 
+  // Checks if positio and velocity are valid
+  if (ret >= 0) {
+    if (payload[4] == 0x00) ret = -EAGAIN;
+    if (payload[5] == 0x00) ret = -EAGAIN;
+  }
+
+  if (ret >= 0) {
+    datum->dop                = (float)JOIN4(&payload[12]);
+    datum->lon                = (double)JOIN8(&payload[16]);
+    datum->lat                = (double)JOIN8(&payload[24]);
+    datum->height             = (float)JOIN4(&payload[32]);
+    datum->var.horizontal_pos = (float)JOIN4(&payload[40]);
+    datum->var.vertical_pos   = (float)JOIN4(&payload[44]);
+    datum->vel_north          = (float)JOIN4(&payload[48]);
+    datum->vel_east           = (float)JOIN4(&payload[52]);
+    datum->vel_up             = (float)JOIN4(&payload[56]);
+    datum->speed              = (float)JOIN4(&payload[60]);
+    datum->ground_speed       = (float)JOIN4(&payload[64]);
+    datum->heading            = (float)JOIN4(&payload[68]);
+    datum->var.ground_speed   = (float)JOIN4(&payload[72]);
+    datum->var.heading        = (float)JOIN4(&payload[76]);
+  }
 
   return ret;
 }

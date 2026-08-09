@@ -42,10 +42,19 @@ typedef enum at6558_cisp_frame_len_e {
 #define BYTE_SPLIT(n,p)  ((uint8_t)(((n) >> (8 * (p))) & 0xFF))
 #define BYTE_JOIN(n,p)   (*((n) + (p)) << (8 * (p)))
 
-#define SPLIT2(n)        BYTE_SPLIT(n, 0), BYTE_SPLIT(n, 1)
-#define SPLIT4(n)        BYTE_SPLIT(n, 0), BYTE_SPLIT(n, 1), BYTE_SPLIT(n, 2), BYTE_SPLIT(n, 3)
-#define JOIN2(n)         (BYTE_JOIN(n, 0) | BYTE_JOIN(n, 1))
-#define JOIN4(n)         (BYTE_JOIN(n, 0) | BYTE_JOIN(n, 1) | BYTE_JOIN(n, 2) | BYTE_JOIN(n, 3))
+#define SPLIT2(n) BYTE_SPLIT(n, 0), BYTE_SPLIT(n, 1)
+
+#define SPLIT4(n)                                                              \
+  BYTE_SPLIT(n, 0), BYTE_SPLIT(n, 1), BYTE_SPLIT(n, 2), BYTE_SPLIT(n, 3)
+
+#define JOIN2(n) (BYTE_JOIN(n, 0) | BYTE_JOIN(n, 1))
+
+#define JOIN4(n)                                                               \
+  (BYTE_JOIN(n, 0) | BYTE_JOIN(n, 1) | BYTE_JOIN(n, 2) | BYTE_JOIN(n, 3))
+
+#define JOIN8(n)                                                               \
+  (BYTE_JOIN((uint64_t *)n, 0) | BYTE_JOIN((uint64_t *)n, 1) | BYTE_JOIN((uint64_t *)n, 2) | BYTE_JOIN((uint64_t *)n, 3) |     \
+   BYTE_JOIN((uint64_t *)n, 4) | BYTE_JOIN((uint64_t *)n, 5) | BYTE_JOIN((uint64_t *)n, 6) | BYTE_JOIN((uint64_t *)n, 7))
 
 #define CSIP_LEN(n)      SPLIT2(n)
 
