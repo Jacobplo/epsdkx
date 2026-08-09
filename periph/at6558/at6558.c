@@ -14,7 +14,7 @@
 #endif
 
 #if CONFIG_RX_BUFFER_SIZE < AT6558_FRAME_SIZE
-#error CONFIG_RX_BUFFER_SIZE must be at least 82 to use the AT6558 driver
+#error CONFIG_RX_BUFFER_SIZE must be at least 88 to use the AT6558 driver
 #endif
 
 

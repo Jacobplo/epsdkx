@@ -11,7 +11,7 @@
 #include <epsdkx/common/uart.h>
 
 
-#define AT6558_FRAME_SIZE 82
+#define AT6558_FRAME_SIZE 88
 
 typedef struct at6558_dev_s {
   uart_channel_t channel;
