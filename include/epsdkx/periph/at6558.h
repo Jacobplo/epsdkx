@@ -11,11 +11,11 @@
 #include <epsdkx/common/uart.h>
 
 
-#define AT6558_MAX_FRAME_SIZE 82
+#define AT6558_FRAME_SIZE 82
 
 typedef struct at6558_dev_s {
   uart_channel_t channel;
-  char frame[AT6558_MAX_FRAME_SIZE];
+  uint8_t frame[AT6558_FRAME_SIZE];
 } at6558_dev_s;
 
 /**
