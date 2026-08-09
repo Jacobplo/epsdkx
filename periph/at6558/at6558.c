@@ -1,4 +1,5 @@
 #include <epsdkx/periph/at6558.h>
+#include "private/at6558_def.h"
 
 #include <epsdkx/drivers/uart.h>
 #include <epsdkx/common/uart.h>
@@ -17,34 +18,11 @@
 #error CONFIG_RX_BUFFER_SIZE must be at least 128 to use the AT6558 driver
 #endif
 
-
 typedef enum at6558_csip_message_e {
   AT6558_POLL_NAV_PV,
 
   AT6558_MESSAGE_COUNT,
 } at6558_csip_message_e;
-
-#define CSIP_HEADER      0xBA, 0xCE
-
-#define BYTE_SPLIT(n,p)  ((uint8_t)(((n) >> (8 * (p))) & 0xFF))
-#define BYTE_JOIN(n,p)   (*((n) + (p)) << (8 * (p)))
-
-#define SPLIT2(n)        BYTE_SPLIT(n, 0), BYTE_SPLIT(n, 1)
-#define SPLIT4(n)        BYTE_SPLIT(n, 0), BYTE_SPLIT(n, 1), BYTE_SPLIT(n, 2), BYTE_SPLIT(n, 3)
-#define JOIN2(n)         (BYTE_JOIN(n, 0) | BYTE_JOIN(n, 1))
-#define JOIN4(n)         (BYTE_JOIN(n, 0) | BYTE_JOIN(n, 1) | BYTE_JOIN(n, 2) | BYTE_JOIN(n, 3))
-
-#define CSIP_LEN(n)      SPLIT2(n)
-#define CSIP_CKSUM(n)    SPLIT4(n)
-
-#define CSIP_HEADER_POS  0
-#define CSIP_LEN_POS     2
-#define CSIP_CLASS_POS   4
-#define CSIP_ID_POS      5
-#define CSIP_PAYLOAD_POS 6
-
-#define NAV_PV           0x01, 0x03
-#define CFG_MSG          0x06, 0x01
 
 /**
  * Contains pre-defined CSIP messages used by the driver, without a checksum.
@@ -77,6 +55,8 @@ static void at6558_write_frame(at6558_dev_s *dev, size_t n);
  * Writes the frame after copying the full frame to dev->frame.
  */
 static void at6558_csip_construct_frame(at6558_dev_s *dev, at6558_csip_message_e message);
+
+static void at6558_parse_nav_pv_payload(at6558_dev_s *dev, at6558_csip_message_e message);
 
 
 int at6558_init(at6558_dev_s *dev, uart_channel_t channel) {

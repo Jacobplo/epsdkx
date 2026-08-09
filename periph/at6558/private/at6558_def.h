@@ -1,0 +1,42 @@
+#ifndef _EPSDKX_PERIPH_AT6558_DEF_H
+#define _EPSDKX_PERIPH_AT6558_DEF_H
+
+typedef enum at6558_cisp_class_e {
+  AT6558_NAV = 0x01,
+  AT6558_TIM = 0x02,
+  AT6558_RXM = 0x03,
+  AT6558_ACK = 0x05,
+  AT6558_CFG = 0x06,
+  AT6558_MSG = 0x08,
+  AT6558_MON = 0x0A,
+  AT6558_AID = 0x0B,
+} at6558_cisp_class_e;
+
+typedef enum at6558_cisp_id_e {
+  AT6558_NAV_PV = 0x03,
+  AT6558_CFG_MSG = 0x01,
+} at6558_cisp_id_e;
+
+#define CSIP_HEADER      0xBA, 0xCE
+
+#define BYTE_SPLIT(n,p)  ((uint8_t)(((n) >> (8 * (p))) & 0xFF))
+#define BYTE_JOIN(n,p)   (*((n) + (p)) << (8 * (p)))
+
+#define SPLIT2(n)        BYTE_SPLIT(n, 0), BYTE_SPLIT(n, 1)
+#define SPLIT4(n)        BYTE_SPLIT(n, 0), BYTE_SPLIT(n, 1), BYTE_SPLIT(n, 2), BYTE_SPLIT(n, 3)
+#define JOIN2(n)         (BYTE_JOIN(n, 0) | BYTE_JOIN(n, 1))
+#define JOIN4(n)         (BYTE_JOIN(n, 0) | BYTE_JOIN(n, 1) | BYTE_JOIN(n, 2) | BYTE_JOIN(n, 3))
+
+#define CSIP_LEN(n)      SPLIT2(n)
+#define CSIP_CKSUM(n)    SPLIT4(n)
+
+#define CSIP_HEADER_POS  0
+#define CSIP_LEN_POS     2
+#define CSIP_CLASS_POS   4
+#define CSIP_ID_POS      5
+#define CSIP_PAYLOAD_POS 6
+
+#define NAV_PV           AT6558_NAV, AT6558_NAV_PV
+#define CFG_MSG          AT6558_CFG, AT6558_CFG_MSG
+
+#endif
