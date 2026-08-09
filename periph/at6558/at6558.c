@@ -102,8 +102,6 @@ int at6558_init(at6558_dev_s *dev, uart_channel_t channel) {
     }
 
     uart_flush(dev->channel);
-
-    at6558_csip_construct_frame(dev, AT6558_POLL_NAV_PV);
   }
 
   return ret;
@@ -133,7 +131,7 @@ static void at6558_csip_construct_frame(at6558_dev_s *dev, at6558_csip_message_e
     ckSum += JOIN4(&frame[CSIP_PAYLOAD_POS + i]);
   }
 
-  uint8_t ckSumSplit[4] = { SPLIT4(ckSum) };
+  const uint8_t ckSumSplit[4] = { SPLIT4(ckSum) };
 
   memcpy(dev->frame, frame, len);
   memcpy(dev->frame + len, ckSumSplit, 4);
