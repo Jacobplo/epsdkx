@@ -1,3 +1,0 @@
-NEO6_DIR := $(PERIPH_DIR)/neo6
-
-src-$(CONFIG_PERIPH_NEO6) += $(NEO6_DIR)/neo6.c
