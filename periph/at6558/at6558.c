@@ -70,6 +70,11 @@ static void at6558_write_frame(at6558_dev_s *dev, size_t n);
  */
 static void at6558_csip_construct_frame(at6558_dev_s *dev, at6558_csip_message_e message);
 
+/**
+ * Computes and returns the checksum for a CSIP protocol frame
+ */
+static uint32_t at6558_csip_compute_checksum(const uint8_t *frame);
+
 static void at6558_parse_nav_pv_payload(at6558_dev_s *dev, at6558_csip_message_e message);
 
 
@@ -126,16 +131,22 @@ static void at6558_csip_construct_frame(at6558_dev_s *dev, at6558_csip_message_e
   // Message length minus the checksum. Header + length + type = 6.
   const size_t len = payload_len + 6;
 
-  // Compute checksum
-  uint32_t ckSum = (frame[CSIP_ID_POS] << 24) + (frame[CSIP_CLASS_POS] << 16) + payload_len;
-  for (size_t i = 0; i < payload_len; i += 4) {
-    ckSum += JOIN4(&frame[CSIP_PAYLOAD_POS + i]);
-  }
-
+  const uint32_t ckSum = at6558_csip_compute_checksum(frame);
   const uint8_t ckSumSplit[4] = { SPLIT4(ckSum) };
 
   memcpy(dev->frame, frame, len);
   memcpy(dev->frame + len, ckSumSplit, 4);
 
   at6558_write_frame(dev, len + 4);
+}
+
+static uint32_t at6558_csip_compute_checksum(const uint8_t *frame) {
+  const size_t payload_len = JOIN2(&frame[CSIP_LEN_POS]);
+
+  uint32_t ckSum = (frame[CSIP_ID_POS] << 24) + (frame[CSIP_CLASS_POS] << 16) + payload_len;
+  for (size_t i = 0; i < payload_len; i += 4) {
+    ckSum += JOIN4(&frame[CSIP_PAYLOAD_POS + i]);
+  }
+
+  return ckSum;
 }
