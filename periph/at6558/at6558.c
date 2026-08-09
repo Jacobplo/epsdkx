@@ -1,3 +1,14 @@
+/**
+ * Primarily interfaces with the AT6558 device using the CASIC Multimode
+ * Satellite Navigation Receiver Protocol / CASIC Standard Interface Protocol
+ * (CSIP). CSIP is used in this driver to poll data from the device, which will
+ * also respond with ACK for success, or NACK for failure.
+ *
+ * The NMEA 0183 protocol can also be used to a more limited degree, but this
+ * driver only uses proprietary messages over the protocol during
+ * initialization.
+ */
+
 #include <epsdkx/periph/at6558.h>
 #include "private/at6558_def.h"
 
@@ -88,6 +99,13 @@ int at6558_init(at6558_dev_s *dev, uart_channel_t channel) {
   }
 
   return ret;
+}
+
+int at6558_get_gps_datum(at6558_dev_s *dev, at6558_datum_s *datum) {
+  (void)dev;
+  (void)datum;
+
+  return 0;
 }
 
 static void at6558_read_frame(at6558_dev_s *dev) {
