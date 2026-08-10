@@ -293,8 +293,36 @@ static int at6558_parse_nav_pv(at6558_dev_s *dev, at6558_datum_s *datum) {
 static int at6558_parse_nav_timeutc(at6558_dev_s *dev, at6558_utc_time_s *time) {
   int ret = 0;
 
-  (void)dev;
-  (void)time;
+  const uint32_t computed_cksum = at6558_csip_compute_checksum(dev->frame);
+  const uint32_t received_cksum = JOIN4(&dev->frame[AT6558_LEN_NAV_TIMEUTC - 4]);
+
+  const at6558_cisp_class_e class = dev->frame[CSIP_CLASS_POS];
+  const at6558_cisp_id_e id = dev->frame[CSIP_ID_POS];
+
+  const uint8_t *payload = &dev->frame[CSIP_PAYLOAD_POS];
+
+  if (computed_cksum != received_cksum) {
+    ret = -EAGAIN;
+  }
+  else if (class != AT6558_NAV && id != AT6558_NAV_TIMEUTC) {
+    ret = -EINVAL;
+  }
+ 
+  // Checks if time and date are valid
+  if (ret >= 0) {
+    if (!(payload[21] & 0x07)) ret = -EAGAIN;
+    if (payload[23] == 0x00) ret = -EAGAIN;
+  }
+
+  if (ret >= 0) {
+    time->ms    = JOIN2(&payload[12]);
+    time->year  = JOIN2(&payload[14]);
+    time->month = payload[16];
+    time->day   = payload[17];
+    time->hour  = payload[18];
+    time->min   = payload[19];
+    time->sec   = payload[20];
+  }
 
   return ret;
 }
