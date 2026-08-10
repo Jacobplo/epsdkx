@@ -24,6 +24,7 @@ typedef enum at6558_cisp_id_e {
   AT6558_NAV_PV      = 0x03,
   AT6558_NAV_TIMEUTC = 0x10,
   AT6558_CFG_MSG     = 0x01,
+  AT6558_CFG_RATE    = 0x04,
   AT6558_ACK_NACK    = 0x00,
   AT6558_ACK_ACK     = 0x01,
 } at6558_cisp_id_e;
@@ -67,5 +68,7 @@ typedef enum at6558_cisp_frame_len_e {
 #define NAV_PV           AT6558_NAV, AT6558_NAV_PV
 #define NAV_TIMEUTC      AT6558_NAV, AT6558_NAV_TIMEUTC
 #define CFG_MSG          AT6558_CFG, AT6558_CFG_MSG
+#define CFG_RATE         AT6558_CFG, AT6558_CFG_RATE
+
 
 #endif

@@ -34,6 +34,7 @@
 typedef enum at6558_csip_message_e {
   AT6558_POLL_NAV_PV,
   AT6558_POLL_NAV_TIMEUTC,
+  AT6558_MAX_RATE,
 
   AT6558_MESSAGE_COUNT,
 } at6558_csip_message_e;
@@ -46,6 +47,8 @@ static const uint8_t *const csip_messages[AT6558_MESSAGE_COUNT] = {
                                                 NAV_PV, 0xFF, 0xFF},
   [AT6558_POLL_NAV_TIMEUTC] = (const uint8_t[]){CSIP_HEADER, CSIP_LEN(4), CFG_MSG,
                                                 NAV_TIMEUTC, 0xFF, 0xFF},
+  [AT6558_MAX_RATE]         = (const uint8_t[]){CSIP_HEADER, CSIP_LEN(4), CFG_RATE,
+                                                0x64, 0x00, 0x00, 0x00}
 };
 
 #define NMEA_INIT_MESSAGES_SIZE 1
@@ -137,6 +140,11 @@ int at6558_init(at6558_dev_s *dev, uart_channel_t channel) {
     }
 
     uart_flush(dev->channel);
+
+    // Set 10 Hz navigation rate
+    at6558_csip_construct_frame(dev, AT6558_MAX_RATE);
+    at6558_read_frame(dev, AT6558_LEN_ACK);
+    ret = at6558_parse_ack(dev);
   }
 
   return ret;
