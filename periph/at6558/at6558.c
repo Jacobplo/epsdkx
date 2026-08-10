@@ -112,8 +112,14 @@ static int at6558_parse_nav_pv(at6558_dev_s *dev, at6558_datum_s *datum);
  */
 static int at6558_parse_nav_timeutc(at6558_dev_s *dev, at6558_utc_time_s *time);
 
+/**
+ * Interprets and return a 32-bit integer bitfield as a float.
+ */
 static float at6558_extract_float(const uint32_t bits);
 
+/**
+ * Interprets and return a 64-bit integer bitfield as a double.
+ */
 static double at6558_extract_double(const uint64_t bits);
 
 
