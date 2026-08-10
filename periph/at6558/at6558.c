@@ -156,7 +156,7 @@ int at6558_init(at6558_dev_s *dev, uart_channel_t channel) {
   return ret;
 }
 
-int at6558_get_gps_datum(at6558_dev_s *dev, at6558_datum_s *datum) {
+int at6558_get_gnss_datum(at6558_dev_s *dev, at6558_datum_s *datum) {
   int ret = 0;
 
   // Poll for UTC time

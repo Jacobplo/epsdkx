@@ -1,5 +1,5 @@
 /**
- * Public API driver for the AT6558 GPS receiver.
+ * Public API driver for the AT6558 GNSS receiver.
  *
  * Unless otherwise stated, all functions that return int return a
  * negative errno on error, and 0 on success.
@@ -32,7 +32,7 @@ typedef struct at6558_variance_s {
 } at6558_variance_s;
 
 /**
- * UTC time stamp of a particular GPS datum
+ * UTC time stamp of a particular GNSS datum
  */
 typedef struct at6558_utc_time_s {
   uint16_t year;
@@ -63,7 +63,7 @@ typedef struct at6558_datum_s {
 } at6558_datum_s;
 
 /**
- * Initializes the provided UART channel for use with the GPS receiver and
+ * Initializes the provided UART channel for use with the GNSS receiver and
  * sends configuration messages to the device for use with this driver.
  *
  * dev should be declared empty by the user. It stores data about the device
@@ -72,8 +72,8 @@ typedef struct at6558_datum_s {
 int at6558_init(at6558_dev_s *dev, uart_channel_t channel);
 
 /**
- * Polls the GPS receiver for geodetic coordinate system information.
+ * Polls the GNSS receiver for geodetic coordinate system information.
  */
-int at6558_get_gps_datum(at6558_dev_s *dev, at6558_datum_s *datum);
+int at6558_get_gnss_datum(at6558_dev_s *dev, at6558_datum_s *datum);
 
 #endif
