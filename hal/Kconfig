@@ -1,5 +1,9 @@
 rsource "$(FAMILY)/Kconfig"
 
+config RX_BUFFER_SIZE
+  int "Size in bytes of all communcation protocol RX buffers"
+  default 64
+
 config GPIO
   bool "Enable GPIO Driver"
 config PLATFORM_SUPPORTS_GPIO

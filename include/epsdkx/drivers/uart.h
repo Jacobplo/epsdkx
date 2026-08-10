@@ -41,4 +41,10 @@ int uart_get(uart_channel_t channel, uint8_t *rx);
  */
 const uart_pins_s *uart_get_pins(uart_channel_t channel);
 
+
+/**
+ * Flush the RX buffer
+ */
+void uart_flush(uart_channel_t channel);
+
 #endif
