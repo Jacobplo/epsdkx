@@ -32,15 +32,15 @@ typedef enum at6558_cisp_id_e {
  * The size of a full CSIP frame, including all fields, in bytes.
  */
 typedef enum at6558_cisp_frame_len_e {
-  AT6558_LEN_NAV_PV      = 88,
-  AT6558_LEN_NAV_TIMEUTC = 32,
-  AT6558_LEN_ACK         = 12,
+  AT6558_LEN_NAV_PV      = 90,
+  AT6558_LEN_NAV_TIMEUTC = 34,
+  AT6558_LEN_ACK         = 14,
 } at6558_cisp_frame_len_e;
 
 #define CSIP_HEADER      0xBA, 0xCE
 
 #define BYTE_SPLIT(n,p)  ((uint8_t)(((n) >> (8 * (p))) & 0xFF))
-#define BYTE_JOIN(n,p)   (*((n) + (p)) << (8 * (p)))
+#define BYTE_JOIN(n,p)   ((uint64_t)*((n) + (p)) << (8 * (p)))
 
 #define SPLIT2(n) BYTE_SPLIT(n, 0), BYTE_SPLIT(n, 1)
 
@@ -53,8 +53,8 @@ typedef enum at6558_cisp_frame_len_e {
   (BYTE_JOIN(n, 0) | BYTE_JOIN(n, 1) | BYTE_JOIN(n, 2) | BYTE_JOIN(n, 3))
 
 #define JOIN8(n)                                                               \
-  (BYTE_JOIN((uint64_t *)n, 0) | BYTE_JOIN((uint64_t *)n, 1) | BYTE_JOIN((uint64_t *)n, 2) | BYTE_JOIN((uint64_t *)n, 3) |     \
-   BYTE_JOIN((uint64_t *)n, 4) | BYTE_JOIN((uint64_t *)n, 5) | BYTE_JOIN((uint64_t *)n, 6) | BYTE_JOIN((uint64_t *)n, 7))
+  (BYTE_JOIN(n, 0) | BYTE_JOIN(n, 1) | BYTE_JOIN(n, 2) | BYTE_JOIN(n, 3) |     \
+   BYTE_JOIN(n, 4) | BYTE_JOIN(n, 5) | BYTE_JOIN(n, 6) | BYTE_JOIN(n, 7))
 
 #define CSIP_LEN(n)      SPLIT2(n)
 
