@@ -83,7 +83,7 @@ static uint32_t at6558_csip_compute_checksum(const uint8_t *frame);
 /**
  * Parses dev->frame as if its an ACK message type.
  *
- * Returns -EINVAL if dev->frame is not an ACK message.
+ * Returns -EAGAIN if dev->frame is not an ACK message.
  * Returns -EAGAIN if dev->frame is an ACK-NACK message. 
  * Retruns -EAGAIN if the checksum does not match.
  * Returns 0 otherwise.
@@ -94,7 +94,7 @@ static int at6558_parse_ack(at6558_dev_s *dev);
 /**
  * Parses dev->frame as if its a NAV-PV message type, cleanly into datum fields.
  *
- * Returns -EINVAL if dev->frame is not a NAV-PV message.
+ * Returns -EAGAIN if dev->frame is not a NAV-PV message.
  * Returns -EAGAIN if the checksum does not match.
  * Returns -EAGAIN if the payload has invalid data.
  * Returns 0 otherwise.
@@ -105,7 +105,7 @@ static int at6558_parse_nav_pv(at6558_dev_s *dev, at6558_datum_s *datum);
  * Parses dev->frame as if its a NAV-TIMEUTC message type, cleanly into datum
  * fields.
  *
- * Returns -EINVAL if dev->frame is not a NAV-TIMEUTC message.
+ * Returns -EAGAIN if dev->frame is not a NAV-TIMEUTC message.
  * Returns -EAGAIN if the checksum does not match.
  * Returns -EAGAIN if the payload has invalid data.
  * Returns 0 otherwise.
@@ -243,7 +243,7 @@ static int at6558_parse_ack(at6558_dev_s *dev) {
     ret = -EAGAIN;
   }
   else if (class != AT6558_ACK) {
-    ret = -EINVAL;
+    ret = -EAGAIN;
   }
   else if (id == AT6558_ACK_NACK) {
     ret = -EAGAIN;
@@ -267,7 +267,7 @@ static int at6558_parse_nav_pv(at6558_dev_s *dev, at6558_datum_s *datum) {
     ret = -EAGAIN;
   }
   else if (class != AT6558_NAV && id != AT6558_NAV_PV) {
-    ret = -EINVAL;
+    ret = -EAGAIN;
   }
  
   // Checks if positio and velocity are valid
@@ -311,7 +311,7 @@ static int at6558_parse_nav_timeutc(at6558_dev_s *dev, at6558_utc_time_s *time) 
     ret = -EAGAIN;
   }
   else if (class != AT6558_NAV && id != AT6558_NAV_TIMEUTC) {
-    ret = -EINVAL;
+    ret = -EAGAIN;
   }
  
   // Checks if time and date are valid
