@@ -52,9 +52,6 @@ static hal_spi_config_s spi_pin_map[SPI_CHANNEL_COUNT] = {
   },
 };
 
-// Sets baud rate to a speed close to 1 to 2 MHz
-static void hal_spi_set_baud_rate(spi_channel_t channel);
-
 static inline void hal_spi_common_isr(spi_channel_t channel);
 
 
@@ -88,7 +85,7 @@ int hal_spi_init(spi_channel_t channel, spi_mode_e mode, spi_cpol_e cpol, spi_cp
       hal_gpio_configure(&cfg->pins.mosi, GPIO_OUT_ALT_PUSH_PULL);
       hal_gpio_configure(&cfg->pins.miso, GPIO_IN);
 
-      hal_spi_set_baud_rate(channel); 
+      hal_spi_set_freq(channel, 2000); 
 
       // Set software slave select
       cfg->reg->CR1 |= (SPI_CR1_SSM | SPI_CR1_SSI);
@@ -164,7 +161,10 @@ int hal_spi_get(spi_channel_t channel, uint8_t *rx) {
   return hal_rx_buffer_get(&cfg->rx_buf, rx);
 }
 
-static void hal_spi_set_baud_rate(spi_channel_t channel) {
+int hal_spi_set_freq(spi_channel_t channel, uint32_t freq_khz) {
+  if (SPI_CHANNEL_IDX(channel) >= SPI_CHANNEL_COUNT) return -EINVAL;
+  int ret = 0;
+
   hal_spi_config_s *cfg = &spi_pin_map[SPI_CHANNEL_IDX(channel)];
 
   cfg->reg->CR1 &= ~(SPI_CR1_BR);
@@ -182,37 +182,46 @@ static void hal_spi_set_baud_rate(spi_channel_t channel) {
       break;
   }
 
-  // Target speed is 1-2 MHz, so we divide by 2 MHz to get a divisor
-  uint32_t divisor = pclk / 2000000;
-
-  // Round divisor up to the nearest power of 2 to guarantee a value between 1 and 2 MHz
-  uint32_t br_bits;
-  if (divisor > 128) {
-    br_bits = SPI_CR1_BR_2 | SPI_CR1_BR_1 | SPI_CR1_BR_0;
-  }
-  else if (divisor > 64) {
-    br_bits = SPI_CR1_BR_2 | SPI_CR1_BR_1;
-  }
-  else if (divisor > 32) {
-    br_bits = SPI_CR1_BR_2 | SPI_CR1_BR_0;
-  }
-  else if (divisor > 16) {
-    br_bits = SPI_CR1_BR_2;
-  }
-  else if (divisor > 8) {
-    br_bits = SPI_CR1_BR_1 | SPI_CR1_BR_0;
-  }
-  else if (divisor > 4) {
-    br_bits = SPI_CR1_BR_1;
-  }
-  else if (divisor > 2) {
-    br_bits = SPI_CR1_BR_0;
-  }
-  else {
-    br_bits = 0x0;
+  if (pclk < freq_khz * 1000) {
+    ret = -EINVAL; 
   }
 
-  cfg->reg->CR1 |= br_bits;
+  if (ret >= 0) {
+    // Find the real desired clock divisor
+    uint32_t divisor = pclk / (freq_khz * 100);
+
+    // Round the divisor down to the nearest available divisor to get a value
+    // close to the desired frequency
+    uint32_t br_bits;
+    if (divisor > 128) {
+      br_bits = SPI_CR1_BR_2 | SPI_CR1_BR_1 | SPI_CR1_BR_0;
+    }
+    else if (divisor > 64) {
+      br_bits = SPI_CR1_BR_2 | SPI_CR1_BR_1;
+    }
+    else if (divisor > 32) {
+      br_bits = SPI_CR1_BR_2 | SPI_CR1_BR_0;
+    }
+    else if (divisor > 16) {
+      br_bits = SPI_CR1_BR_2;
+    }
+    else if (divisor > 8) {
+      br_bits = SPI_CR1_BR_1 | SPI_CR1_BR_0;
+    }
+    else if (divisor > 4) {
+      br_bits = SPI_CR1_BR_1;
+    }
+    else if (divisor > 2) {
+      br_bits = SPI_CR1_BR_0;
+    }
+    else {
+      br_bits = 0x0;
+    }
+
+    cfg->reg->CR1 |= br_bits;
+  } 
+
+  return ret;
 }
 
 static inline void hal_spi_common_isr(spi_channel_t channel) {

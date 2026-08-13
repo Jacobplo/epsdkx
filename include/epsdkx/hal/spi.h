@@ -27,7 +27,7 @@
  * The interface should be configured in MSB first mode, with a data width of
  * 8-bits.
  *
- * In master mode: the clock should be configured with a frequency within
+ * In master mode: by default, the clock should be configured with a frequency within
  * the 1-2 MHz range, or as close to that range as possible. The interface
  * should not be configured with slave select pins, because those are
  * expected to be the responsibility of user-level code.
@@ -59,5 +59,13 @@ int hal_spi_get(spi_channel_t channel, uint8_t *rx);
  */
 const spi_pins_s *hal_spi_get_pins(spi_channel_t channel);
 
+/**
+ * Should set the master mode clock frequency to the provided frequency, in kHz.
+ * If it is not possible to set the clock to the provided frequency, select a
+ * frequency as close as possible to the provided frequency.
+ *
+ * Should have no effect in slave mode.
+ */
+int hal_spi_set_freq(spi_channel_t channel, uint32_t freq_khz);
 
 #endif

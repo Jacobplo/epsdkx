@@ -31,3 +31,7 @@ int spi_readn_writen(spi_channel_t channel, uint8_t *tx, size_t n) {
 
   return 0;
 }
+
+int spi_set_freq(spi_channel_t channel, uint32_t freq_khz) {
+  return hal_spi_set_freq(channel, freq_khz);
+}

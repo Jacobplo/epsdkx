@@ -17,6 +17,8 @@
 /**
  * Generic SPI interface intialization that works for either master or slave
  * mode.
+ *
+ * In master mode: defaults to a frequency in the 1-2 MHz range.
  */
 int spi_init(spi_channel_t channel, spi_mode_e mode, spi_cpol_e cpol, spi_cpha_e cpha);
 
@@ -41,5 +43,14 @@ int spi_get(spi_channel_t channel, uint8_t *rx);
  * Returns the GPIO pins used by the SPI interface.
  */
 const spi_pins_s *spi_get_pins(spi_channel_t channel);
+
+/**
+ * Sets the master mode as close as possible to the provided frequency, in kHz.
+ * No guarantee can be made that the clock will able to be set exactly as
+ * configured, but in most cases it should be reasonably accurate.
+ *
+ * Has no effect in slave mode.
+ */
+int spi_set_freq(spi_channel_t channel, uint32_t freq_khz);
 
 #endif
