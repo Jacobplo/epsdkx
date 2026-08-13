@@ -188,7 +188,7 @@ int hal_spi_set_freq(spi_channel_t channel, uint32_t freq_khz) {
 
   if (ret >= 0) {
     // Find the real desired clock divisor
-    uint32_t divisor = pclk / (freq_khz * 100);
+    uint32_t divisor = pclk / (freq_khz * 1000);
 
     // Round the divisor down to the nearest available divisor to get a value
     // close to the desired frequency
