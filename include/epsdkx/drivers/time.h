@@ -22,16 +22,23 @@ void time_init(void);
 void time_delay_ticks(uint32_t ticks);
 
 /**
- * Returns the internal tick count.
- *
- * Currently has no practical use, but is intended for use by 
- * yet-to-be-implemented functions for measuring execution time.
- */
-uint32_t time_get_ticks(void);
-
-/**
  * Delays program execution for a given number of milliseconds.
  */
 void time_delay_ms(uint32_t ms);
+
+/**
+ * Returns the internal tick count.
+ * 
+ * Can be used alongside time_ticks_to_ms() to compute passed time.
+ */
+uint32_t time_get_ticks(void);
+
+
+/**
+ * Converts the provided tick count to its equivalent milliseconds.
+ *
+ * Can be used alongside time_get_ticks() to compute passed time.
+ */
+uint32_t time_ticks_to_ms(uint32_t ticks);
 
 #endif

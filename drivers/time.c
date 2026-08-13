@@ -13,11 +13,14 @@ void time_delay_ticks(uint32_t ticks) {
   hal_time_delay_ticks(ticks);
 }
 
-uint32_t time_get_ticks(void) {
-  return hal_time_get_ticks();
-}
-
 void time_delay_ms(uint32_t ms) {
   hal_time_delay_ms(ms);
 }
 
+uint32_t time_get_ticks(void) {
+  return hal_time_get_ticks();
+}
+
+uint32_t time_ticks_to_ms(uint32_t ticks) {
+  return hal_time_ticks_to_ms(ticks);
+}
