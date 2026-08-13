@@ -1,25 +1,38 @@
 #include <epsdkx/hal/time.h>
-#include "private/systick.h"
+
+#include "stm32f1xx.h"
 
 #include <stdint.h>
 
 
+#define TICKS_PER_MS 1
+
+static volatile uint32_t s_ticks;
+
+
 void hal_time_init(void) {
-  hal_systick_init();
+  extern uint32_t SystemCoreClock;
+  SysTick_Config(SystemCoreClock / 1000);
 }
 
 void hal_time_delay_ticks(uint32_t ticks) {
-  hal_systick_delay_ticks(ticks);
+  uint32_t start = s_ticks;
+  while((uint32_t)(s_ticks - start) < ticks) (void)0;
 }
 
 void hal_time_delay_ms(uint32_t ms) {
-  hal_systick_delay_ms(ms);
+  hal_time_delay_ticks(ms * TICKS_PER_MS);
 }
 
 uint32_t hal_time_get_ticks(void) {
-  return hal_systick_get_ticks();
+  return s_ticks;
 }
 
 uint32_t hal_time_ticks_to_ms(uint32_t ticks) {
-  return hal_systick_ticks_to_ms(ticks);
+  return ticks / TICKS_PER_MS;
+}
+
+
+void SysTick_Handler(void) {
+  s_ticks++;
 }
