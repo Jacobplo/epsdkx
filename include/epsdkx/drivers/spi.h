@@ -53,4 +53,10 @@ const spi_pins_s *spi_get_pins(spi_channel_t channel);
  */
 int spi_set_freq(spi_channel_t channel, uint32_t freq_khz);
 
+/**
+ * Discards n bytes from the internal RX buffer for cases where data is sent,
+ * but none should be received.
+ */
+void spi_discardn(spi_channel_t channel, size_t n);
+
 #endif

@@ -35,3 +35,11 @@ int spi_readn_writen(spi_channel_t channel, uint8_t *tx, size_t n) {
 int spi_set_freq(spi_channel_t channel, uint32_t freq_khz) {
   return hal_spi_set_freq(channel, freq_khz);
 }
+
+void spi_discardn(spi_channel_t channel, size_t n) {
+  uint8_t discard;
+
+  for (size_t i = 0; i < n; i++) {
+    while (spi_get(channel, &discard) < 0) (void)0;
+  }
+}
