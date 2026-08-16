@@ -172,7 +172,7 @@ modules: $(MODULES)
 
 $(MODULES):
 	@printf '\tMODULE\tinit\n'
-	@git submodule update --init $@
+	@git submodule update --init $*
 
 # Other Helper Targets
 
