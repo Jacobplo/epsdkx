@@ -7,9 +7,11 @@
 #include <epsdkx/drivers/time.h>
 
 
+#define TIMEOUT_MS 1000
+
+
 int sd_init(sd_dev_s *dev, spi_channel_t channel, gpio_pin_u cs_pin) {
   int ret;
-  uint8_t discard;
 
   dev->channel = channel;
   dev->cs = cs_pin;
@@ -26,7 +28,10 @@ int sd_init(sd_dev_s *dev, spi_channel_t channel, gpio_pin_u cs_pin) {
     for (size_t i = 0; i < 10; i++) {
       spi_read_write(dev->channel, 0);
     }
-    spi_discardn(dev->channel, 10);
+    spi_discardn(dev->channel, 10, TIMEOUT_MS);
+
+    // Return frequency to default 2 MHz.
+    spi_set_freq(dev->channel, 2000);
   } 
 
   return ret;
