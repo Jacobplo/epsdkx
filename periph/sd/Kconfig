@@ -1,0 +1,2 @@
+config PERIPH_SD
+  bool "SD card SPI mode driver"

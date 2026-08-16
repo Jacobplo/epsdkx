@@ -1,8 +1,3 @@
-config PERIPH_BMP280
-  bool "BMP280 temperature / pressure sensor"
-
-config PERIPH_AT6558
-  bool "AT6558 GNSS reciever"
-
-config PERIPH_SD
-  bool "SD card SPI mode driver"
+rsource "bmp280/Kconfig"
+rsource "at6558/Kconfig"
+rsource "sd/Kconfig"

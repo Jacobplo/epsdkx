@@ -1,0 +1,2 @@
+config PERIPH_AT6558
+  bool "AT6558 GNSS reciever"
