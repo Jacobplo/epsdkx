@@ -1,5 +1,6 @@
 rsource "hal/Kconfig"
 rsource "drivers/Kconfig"
+rsource "modules/Kconfig"
 rsource "sys/Kconfig"
 rsource "boards/$(FAMILY)/$(BOARD)/Kconfig"
 rsource "periph/Kconfig"

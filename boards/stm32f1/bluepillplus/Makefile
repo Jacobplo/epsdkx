@@ -1,6 +1,3 @@
-INCLUDE      += -I$(SDK_ROOT)/external/cmsis-device-f1/Include \
-                -I$(SDK_ROOT)/external/CMSIS_5/CMSIS/Core/Include
-
 DEFINE       += -DSTM32F103xB
 
 src-y        += $(BOARD_DIR)/board.c

@@ -1,0 +1,6 @@
+config MODULE_CMSIS_5
+  bool "Enables CMSIS 5 headers"
+  default y if MODULE_CMSIS_STM32F1
+
+config MODULE_CMSIS_STM32F1
+  bool "Enables headers for STM32F1 targets"

@@ -4,7 +4,7 @@
 
 .DEFAULT_GOAL := all
 .PHONY: all
-all: setup check build
+all: modules setup check build
 
 # ===================
 # Directory Constants
@@ -15,6 +15,7 @@ SRC_TREE     := $(patsubst %/,%,$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 BOARD_DIR    := $(SDK_ROOT)/boards/$(FAMILY)/$(BOARD)
 HAL_DIR      := $(SDK_ROOT)/hal/$(FAMILY)
 DRIVER_DIR   := $(SDK_ROOT)/drivers
+MODULE_DIR   := $(SDK_ROOT)/modules
 PERIPH_DIR   := $(SDK_ROOT)/periph
 SYS_DIR      := $(SDK_ROOT)/sys
 OUTPUT_DIR   := $(CURDIR)
@@ -32,11 +33,15 @@ STAMP_DIR    := $(BUILD_DIR)/stamps
 INCLUDE      += -isystem $(SDK_ROOT)/include \
                 -isystem $(BUILD_DIR)/include \
                 -isystem $(BOARD_DIR)/include
+inc-y        ?=
 
 DEFINE       +=
 SOURCES      +=
 ASM_SOURCES  +=
 src-y        ?=
+
+MODULES      +=
+mod-y        ?=
 
 CFLAGS       += -W -Wall -Wextra -Wundef -Wshadow -Wdouble-promotion \
                 -Wformat-truncation -fno-common -ffunction-sections -fdata-sections \
@@ -85,6 +90,7 @@ endif
 -include $(BOARD_DIR)/Makefile
 -include $(SDK_ROOT)/hal/Makefile
 -include $(DRIVER_DIR)/Makefile
+-include $(MODULE_DIR)/Makefile
 -include $(PERIPH_DIR)/Makefile
 -include $(SYS_DIR)/Makefile
 
@@ -97,6 +103,8 @@ SOURCES      += $(src-y)
 OBJS         = $(SOURCES:%.c=$(OBJ_DIR)/%.o)
 ASM_OBJS     = $(ASM_SOURCES:%.s=$(OBJ_DIR)/%.o)
 DEPS         = $(SOURCES:%.c=$(DEP_DIR)/%.d)
+INCLUDE      += $(inc-y)
+MODULES      += $(mod-y)
 
 # =======
 # Targets
@@ -157,7 +165,14 @@ $(STAMP_DIR)/check-kconfig.stamp: $(KCONFIG_CONFIG)
 	@$(CHECK_KCONFIG)
 	@touch $@
 
+# Modules
 
+.PHONY: modules
+modules: $(MODULES)
+
+$(MODULES):
+	@printf '\tMODULE\tinit\n'
+	@git submodule update --init $@
 
 # Other Helper Targets
 
