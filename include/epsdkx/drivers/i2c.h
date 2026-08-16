@@ -16,6 +16,7 @@
 #include <epsdkx/hal/i2c.h>
 
 #include <stdint.h>
+#include <stddef.h>
 
 /**
  * Generic I2C interface intialization that works for either master or slave
@@ -65,6 +66,16 @@ int i2c_read(i2c_channel_t channel, uint16_t slave_address);
  * Retrieves a single byte of data from the internal RX buffer into rx.
  */
 int i2c_get(i2c_channel_t channel, uint8_t *rx);
+
+/**
+ * Retrieves n byte of data from the internal RX buffer into rx.
+ *
+ * Unlike i2c_get(), this will wait for each byte to arrive, so a timeout is
+ * used.
+ *
+ * Returns -ETIMEOUT on timeout.
+ */
+int i2c_getn(i2c_channel_t channel, uint8_t *rx, size_t n, uint32_t timeout_ms);
 
 /**
  * Returns the GPIO pins used by the I2C interface.

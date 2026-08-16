@@ -37,6 +37,16 @@ int uart_writen(uart_channel_t channel, const uint8_t *tx, size_t n);
 int uart_get(uart_channel_t channel, uint8_t *rx);
 
 /**
+ * Retrieves n byte of data from the internal RX buffer into rx.
+ *
+ * Unlike uart_get(), this will wait for each byte to arrive, so a timeout is
+ * used.
+ *
+ * Returns -ETIMEOUT on timeout.
+ */
+int uart_getn(uart_channel_t channel, uint8_t *rx, size_t n, uint32_t timeout_ms);
+
+/**
  * Returns the GPIO pins used by the UART interface.
  */
 const uart_pins_s *uart_get_pins(uart_channel_t channel);
