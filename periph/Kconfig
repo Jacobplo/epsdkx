@@ -3,3 +3,6 @@ config PERIPH_BMP280
 
 config PERIPH_AT6558
   bool "AT6558 GNSS reciever"
+
+config PERIPH_SD
+  bool "SD card SPI mode driver"

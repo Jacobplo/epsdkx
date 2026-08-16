@@ -1,2 +1,3 @@
 -include $(PERIPH_DIR)/bmp280/Makefile
 -include $(PERIPH_DIR)/at6558/Makefile
+-include $(PERIPH_DIR)/sd/Makefile

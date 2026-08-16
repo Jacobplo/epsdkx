@@ -29,3 +29,13 @@ config PLATFORM_SUPPORTS_PINCTRL
 
 config PLATFORM_SUPPORTS_NEWLIB_LIBC
   def_bool y
+
+# =======
+# MODULES
+# =======
+
+config MODULE_CMSIS_5
+  def_bool y
+
+config MODULE_CMSIS_STM32F1
+  def_bool y
