@@ -7,6 +7,9 @@
 #include <epsdkx/common/gpio.h>
 #include <epsdkx/drivers/time.h>
 
+#include <stdint.h>
+#include <errno.h>
+
 
 #define TIMEOUT_MS 1000
 
@@ -57,6 +60,14 @@ static int sd_read_response(sd_dev_s *dev, sd_r_e type, sd_response_frame_s *rx)
  * Send all initialization commands to the SD card.
  */
 static int sd_init_command_sequence(sd_dev_s *dev);
+
+/**
+ * Handles a full CMD0 SPI transaction.
+ *
+ * Returns -ETIMEDOUT if the transaction times out.
+ * Returns -EAGAIN if there is an unexpected response.
+ */
+static int sd_cmd0_transaction(sd_dev_s *dev);
 
 int sd_init(sd_dev_s *dev, spi_channel_t channel, gpio_pin_u cs_pin) {
   int ret;
@@ -129,20 +140,81 @@ static int sd_write_command(sd_dev_s *dev, const sd_command_frame_s *tx) {
 }
 
 static int sd_read_response(sd_dev_s *dev, sd_r_e type, sd_response_frame_s *rx) {
-  (void)dev;
-  (void)type;
-  (void)rx;
+  int ret;
+  uint8_t discard;
 
-  return 0;
+  // Read the first byte of the response.
+  do {
+    ret = sd_readn_raw(dev, rx->bytes, 1);
+
+    if (ret < 0) {
+      break;
+    }
+  } while (rx->bytes[0] & 0x80);
+
+  if (ret >= 0) {
+    // Read the remaining bytes of the response.
+    switch (type) {
+      case SD_R1:
+        // Do nothing.
+        break;
+
+      case SD_R1B:
+        // Wait until the busy signal finishes.
+        do {
+          ret = sd_readn_raw(dev, &discard, 1);
+
+          if (ret < 0) {
+            break;
+          }
+        } while (discard == 0x00);
+        break;
+
+      case SD_R2:
+        ret = sd_readn_raw(dev, &rx->bytes[1], 1);
+        break;
+
+      case SD_R3:
+        ret = sd_readn_raw(dev, &rx->bytes[1], 4);
+        break;
+
+      case SD_R7:
+        ret = sd_readn_raw(dev, &rx->bytes[1], 4);
+        break;
+    }
+  }
+
+  return ret;
 }
 
 static int sd_init_command_sequence(sd_dev_s *dev) {
   int ret;
 
+  ret = sd_cmd0_transaction(dev);
+
+  return ret;
+}
+
+static int sd_cmd0_transaction(sd_dev_s *dev) {
+  int ret;
+  sd_response_frame_s response;
+
   gpio_write(&dev->cs, GPIO_LOW);
 
   // Send CMD0 to reset into SPI mode.
   ret = sd_write_command(dev, &commands[SD_CMD0_INDEX]);
+
+  if (ret >= 0) {
+    // Receive R1 response
+    ret = sd_read_response(dev, SD_R1, &response);
+  }
+
+  if (ret >= 0) {
+    // Check that only the idle state bit is set.
+    if (response.bytes[0] != 0x01) {
+      ret = -EAGAIN;
+    }
+  }
 
   gpio_write(&dev->cs, GPIO_HIGH);
 
