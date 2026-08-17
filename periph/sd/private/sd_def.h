@@ -57,22 +57,7 @@ typedef struct sd_command_frame_s {
 #define RESPONSE_FRAME_SIZE 5
 
 typedef struct sd_response_frame_s {
-  union {
-    struct {
-      uint8_t bytes[1];
-      uint8_t reserved[4];
-    } r1;
-    struct {
-      uint8_t bytes[2];
-      uint8_t reserved[3];
-    } r2;
-    struct {
-      uint8_t bytes[5];
-    } r3;
-    struct {
-      uint8_t bytes[5];
-    } r7;
-  };
+  uint8_t bytes[RESPONSE_FRAME_SIZE];
 } sd_response_frame_s;
 
 /*
