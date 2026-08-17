@@ -32,14 +32,14 @@ static inline sd_command_frame_s sd_construct_command(sd_cmd_e cmd, uint32_t arg
 /**
  * Receives n contiguous raw bytes from the SD card.
  *
- * Returns -ETIMEOUT if the transaction times out.
+ * Returns -ETIMEDOUT if the transaction times out.
  */
 static int sd_readn_raw(sd_dev_s *dev, uint8_t *rx, size_t n);
 
 /**
  * Sends n contiguous raw bytes to the SD card.
  *
- * Returns -ETIMEOUT if the transaction times out.
+ * Returns -ETIMEDOUT if the transaction times out.
  */
 static int sd_writen_raw(sd_dev_s *dev, const uint8_t *tx, size_t n);
 
@@ -71,10 +71,9 @@ int sd_init(sd_dev_s *dev, spi_channel_t channel, gpio_pin_u cs_pin) {
     spi_discardn(dev->channel, 10, TIMEOUT_MS);
 
     // Return frequency to default 2 MHz.
-    spi_set_freq(dev->channel, 2000);
+    spi_set_freq(dev->channel, 2000); 
 
-    // Send CMD0 to reset into SPI mode.
-    sd_write_command(dev, &commands[SD_CMD0_INDEX]);
+    ret = sd_init_command_sequence(dev);
   } 
 
   return ret;
@@ -96,14 +95,10 @@ static inline sd_command_frame_s sd_construct_command(sd_cmd_e cmd, uint32_t arg
 static int sd_readn_raw(sd_dev_s *dev, uint8_t *rx, size_t n) {
   int ret;
 
-  gpio_write(&dev->cs, GPIO_LOW);
-
   for (size_t i = 0; i < n; i++) {
-    spi_read_write(dev->channel, 0);
+    spi_read_write(dev->channel, 0xFF);
   }
   ret = spi_getn(dev->channel, rx, n, TIMEOUT_MS);
-
-  gpio_write(&dev->cs, GPIO_HIGH);
 
   return ret;
 }
@@ -111,12 +106,8 @@ static int sd_readn_raw(sd_dev_s *dev, uint8_t *rx, size_t n) {
 static int sd_writen_raw(sd_dev_s *dev, const uint8_t *tx, size_t n) {
   int ret;
 
-  gpio_write(&dev->cs, GPIO_LOW);
-
   spi_readn_writen(dev->channel, (uint8_t *)tx, n);
   ret = spi_discardn(dev->channel, n, TIMEOUT_MS);
-
-  gpio_write(&dev->cs, GPIO_HIGH);
 
   return ret;
 }
@@ -125,6 +116,19 @@ static int sd_write_command(sd_dev_s *dev, const sd_command_frame_s *tx) {
   int ret;
 
   ret = sd_writen_raw(dev, tx->bytes, FRAME_SIZE);
+
+  return ret;
+}
+
+static int sd_init_command_sequence(sd_dev_s *dev) {
+  int ret;
+
+  gpio_write(&dev->cs, GPIO_LOW);
+
+  // Send CMD0 to reset into SPI mode.
+  ret = sd_write_command(dev, &commands[SD_CMD0_INDEX]);
+
+  gpio_write(&dev->cs, GPIO_HIGH);
 
   return ret;
 }
