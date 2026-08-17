@@ -1,0 +1,37 @@
+#ifndef _EPSDKX_PERIPH_SD_DEF_H
+#define _EPSDKX_PERIPH_SD_DEF_H
+
+#define CMD(n) (n)
+
+/**
+ * SD SPI mode commands
+ */
+typedef enum sd_cmd_e {
+  CMD0  = CMD(0),  ///< GO_IDLE_STATE
+  CMD1  = CMD(1),  ///< SEND_OP_COND
+  CMD6  = CMD(6),  ///< SWITCH_FUNC
+  CMD8  = CMD(8),  ///< SEND_IF_COND
+  CMD9  = CMD(9),  ///< SEND_CSD
+  CMD10 = CMD(10), ///< SEND_CID
+  CMD12 = CMD(12), ///< STOP_TRANSMISSION
+  CMD13 = CMD(13), ///< SEND_STATUS
+  CMD16 = CMD(16), ///< SET_BLOCKLEN
+  CMD17 = CMD(17), ///< READ_SINGLE_BLOCK
+  CMD18 = CMD(18), ///< READ_MULTIPLE_BLOCK
+  CMD24 = CMD(24), ///< WRITE_BLOCK
+  CMD25 = CMD(25), ///< WRITE_MULTIPLE_BLOCK
+  CMD27 = CMD(27), ///< PROGRAM_CSD
+  CMD28 = CMD(28), ///< SET_WRITE_PROT
+  CMD29 = CMD(29), ///< CLR_WRITE_PROT
+  CMD30 = CMD(30), ///< SEND_WRITE_PROT
+  CMD32 = CMD(32), ///< ERASE_WR_BLK_START_ADDR
+  CMD33 = CMD(33), ///< ERASE_WR_BLK_END_ADDR
+  CMD38 = CMD(38), ///< ERASE
+  CMD42 = CMD(42), ///< LOCK_UNLOCK
+  CMD55 = CMD(55), ///< APP_CMD
+  CMD56 = CMD(56), ///< GEN_CMD
+  CMD58 = CMD(58), ///< READ_OCR
+  CMD59 = CMD(59), ///< CRC_ON_OFF
+} sd_cmd_e;
+
+#endif
