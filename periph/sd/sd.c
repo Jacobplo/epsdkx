@@ -25,9 +25,23 @@ static const sd_command_frame_s commands[SD_COMMAND_COUNT] = {
 
 /**
  * Arranges the provided SD command and argument into a 6-byte frame,
- * defaulting CRC to 0.
+ * defaulting CRC to 0, and returns the frame struct.
  */
 static inline sd_command_frame_s sd_construct_command(sd_cmd_e cmd, uint32_t arg);
+
+/**
+ * Receives n contiguous raw bytes from the SD card.
+ *
+ * Returns -ETIMEOUT if the transaction times out.
+ */
+static int sd_readn_raw(sd_dev_s *dev, uint8_t *rx, size_t n);
+
+/**
+ * Sends n contiguous raw bytes to the SD card.
+ *
+ * Returns -ETIMEOUT if the transaction times out.
+ */
+static int sd_writen_raw(sd_dev_s *dev, const uint8_t *tx, size_t n);
 
 /**
  * Sends a single SD command frame over the SPI bus.
@@ -79,18 +93,38 @@ static inline sd_command_frame_s sd_construct_command(sd_cmd_e cmd, uint32_t arg
   };
 }
 
-/**
- * Sends a single SD command frame over the SPI bus.
- */
-static int sd_write_command(sd_dev_s *dev, const sd_command_frame_s *tx) {
+static int sd_readn_raw(sd_dev_s *dev, uint8_t *rx, size_t n) {
   int ret;
 
   gpio_write(&dev->cs, GPIO_LOW);
 
-  spi_readn_writen(dev->channel, (uint8_t *)tx->bytes, FRAME_SIZE);
-  ret = spi_discardn(dev->channel, FRAME_SIZE, TIMEOUT_MS);
+  for (size_t i = 0; i < n; i++) {
+    spi_read_write(dev->channel, 0);
+  }
+  ret = spi_getn(dev->channel, rx, n, TIMEOUT_MS);
 
   gpio_write(&dev->cs, GPIO_HIGH);
+
+  return ret;
+}
+
+static int sd_writen_raw(sd_dev_s *dev, const uint8_t *tx, size_t n) {
+  int ret;
+
+  gpio_write(&dev->cs, GPIO_LOW);
+
+  spi_readn_writen(dev->channel, (uint8_t *)tx, n);
+  ret = spi_discardn(dev->channel, n, TIMEOUT_MS);
+
+  gpio_write(&dev->cs, GPIO_HIGH);
+
+  return ret;
+}
+
+static int sd_write_command(sd_dev_s *dev, const sd_command_frame_s *tx) {
+  int ret;
+
+  ret = sd_writen_raw(dev, tx->bytes, FRAME_SIZE);
 
   return ret;
 }
