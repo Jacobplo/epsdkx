@@ -258,12 +258,12 @@ static int sd_cmd8_transaction(sd_dev_s *dev) {
     }
     else {
       dev->version = SD_VER_2X;
-    }
 
-    // Check that only the idle state bit is set, after masking the illegal command bit.
-    if ((response.bytes[0] & ~R1_ILLEGAL_COMMAND) != R1_IDLE_STATE) {
-      ret = -EAGAIN;
-    };
+      // Check that only the idle state bit is set, after masking the illegal command bit.
+      if ((response.bytes[0] & ~R1_ILLEGAL_COMMAND) != R1_IDLE_STATE) {
+        ret = -EAGAIN;
+      };
+    } 
   }
 
   if (ret >= 0) {
