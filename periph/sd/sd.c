@@ -48,6 +48,14 @@ static int sd_writen_raw(sd_dev_s *dev, const uint8_t *tx, size_t n);
  */
 static int sd_write_command(sd_dev_s *dev, const sd_command_frame_s *tx);
 
+/**
+ * Receives an SD response of the provided type.
+ */
+static int sd_read_response(sd_dev_s *dev, sd_r_e type, sd_response_frame_s *rx);
+
+/**
+ * Send all initialization commands to the SD card.
+ */
 static int sd_init_command_sequence(sd_dev_s *dev);
 
 int sd_init(sd_dev_s *dev, spi_channel_t channel, gpio_pin_u cs_pin) {
@@ -115,9 +123,17 @@ static int sd_writen_raw(sd_dev_s *dev, const uint8_t *tx, size_t n) {
 static int sd_write_command(sd_dev_s *dev, const sd_command_frame_s *tx) {
   int ret;
 
-  ret = sd_writen_raw(dev, tx->bytes, FRAME_SIZE);
+  ret = sd_writen_raw(dev, tx->bytes, CMD_FRAME_SIZE);
 
   return ret;
+}
+
+static int sd_read_response(sd_dev_s *dev, sd_r_e type, sd_response_frame_s *rx) {
+  (void)dev;
+  (void)type;
+  (void)rx;
+
+  return 0;
 }
 
 static int sd_init_command_sequence(sd_dev_s *dev) {

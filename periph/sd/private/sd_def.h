@@ -37,11 +37,43 @@ typedef enum sd_cmd_e {
   SD_CMD59 = CMD(59), ///< CRC_ON_OFF
 } sd_cmd_e;
 
-#define FRAME_SIZE 6
+/**
+ * SD SPI mode responses
+ */
+typedef enum sd_r_e {
+  SD_R1,
+  SD_R1B,
+  SD_R2,
+  SD_R3,
+  SD_R7
+} sd_r_e;
+
+#define CMD_FRAME_SIZE 6
 
 typedef struct sd_command_frame_s {
-  uint8_t bytes[FRAME_SIZE];
+  uint8_t bytes[CMD_FRAME_SIZE];
 } sd_command_frame_s;
+
+#define RESPONSE_FRAME_SIZE 5
+
+typedef struct sd_response_frame_s {
+  union {
+    struct {
+      uint8_t bytes[1];
+      uint8_t reserved[4];
+    } r1;
+    struct {
+      uint8_t bytes[2];
+      uint8_t reserved[3];
+    } r2;
+    struct {
+      uint8_t bytes[5];
+    } r3;
+    struct {
+      uint8_t bytes[5];
+    } r7;
+  };
+} sd_response_frame_s;
 
 /*
  * Note that the following position refer to the position within each field's
