@@ -2,8 +2,6 @@
 
 #include <stdint.h>
 
-#include "stm32f1xx.h"
-
 uint32_t SystemCoreClock;
 
 void SystemCoreClockUpdate(void) {
