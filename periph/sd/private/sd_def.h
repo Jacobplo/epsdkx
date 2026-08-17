@@ -74,12 +74,24 @@ typedef struct sd_response_frame_s {
   (sd_command_frame_s) {                                     \
     .bytes = {                                               \
       0x0 << START_POS | 0x1 << TRAN_POS | (cmd) << CMD_POS, \
-      (arg) & 0xFF,                                          \
-      ((arg) >> 8) & 0xFF,                                   \
-      ((arg) >> 16) & 0xFF,                                  \
       ((arg) >> 24) & 0xFF,                                  \
+      ((arg) >> 16) & 0xFF,                                  \
+      ((arg) >> 8) & 0xFF,                                   \
+      (arg) & 0xFF,                                          \
       (crc) << CRC_POS | 0x1 << END_POS                      \
     }                                                        \
   }
+
+/*
+ * Bit masks
+ */
+
+#define R1_IDLE_STATE           0x01
+#define R1_ERASE_RESET          0x02
+#define R1_ILLEGAL_COMMAND      0x04
+#define R1_COM_CRC_ERROR        0x08
+#define R1_ERASE_SEQUENCE_ERROR 0x10
+#define R1_ADDRESS_ERROR        0x20
+#define R1_PARAMETER_ERROR      0x40
 
 #endif

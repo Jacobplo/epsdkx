@@ -15,6 +15,7 @@
 
 typedef enum sd_command_index_e {
   SD_CMD0_INDEX,
+  SD_CMD8_INDEX,
 
   SD_COMMAND_COUNT
 } sd_command_index_e;
@@ -23,7 +24,8 @@ typedef enum sd_command_index_e {
  * Contains hard-coded command frames that are used by this driver.
  */
 static const sd_command_frame_s commands[SD_COMMAND_COUNT] = {
-  [SD_CMD0_INDEX] = STATIC_CONSTRUCT_COMMAND(SD_CMD0, 0x0, 0x4A),
+  [SD_CMD0_INDEX] = STATIC_CONSTRUCT_COMMAND(SD_CMD0, 0x00, 0x4A),
+  [SD_CMD8_INDEX] = STATIC_CONSTRUCT_COMMAND(SD_CMD8, 0x100, 0x6A),
 };
 
 /**
@@ -69,6 +71,14 @@ static int sd_init_command_sequence(sd_dev_s *dev);
  */
 static int sd_cmd0_transaction(sd_dev_s *dev);
 
+/**
+ * Handles a full CMD8 SPI transaction.
+ *
+ * Returns -ETIMEDOUT if the transaction times out.
+ * Returns -EAGAIN if there is an unexpected response.
+ */
+static int sd_cmd8_transaction(sd_dev_s *dev);
+
 int sd_init(sd_dev_s *dev, spi_channel_t channel, gpio_pin_u cs_pin) {
   int ret;
 
@@ -102,10 +112,10 @@ static inline sd_command_frame_s sd_construct_command(sd_cmd_e cmd, uint32_t arg
   return (sd_command_frame_s){
     .bytes = {
       0x0 << START_POS | 0x1 << TRAN_POS | cmd << CMD_POS,
-      arg & 0xFF,
-      (arg >> 8) & 0xFF,
+      (arg >> 24)& 0xFF,
       (arg >> 16) & 0xFF,
-      (arg >> 24) & 0xFF,
+      (arg >> 8) & 0xFF,
+      arg & 0xFF,
       0x0 << CRC_POS | 0x1 << END_POS
     }
   };
@@ -192,6 +202,10 @@ static int sd_init_command_sequence(sd_dev_s *dev) {
 
   ret = sd_cmd0_transaction(dev);
 
+  if (ret >= 0) {
+    ret = sd_cmd8_transaction(dev);
+  }
+
   return ret;
 }
 
@@ -205,18 +219,64 @@ static int sd_cmd0_transaction(sd_dev_s *dev) {
   ret = sd_write_command(dev, &commands[SD_CMD0_INDEX]);
 
   if (ret >= 0) {
-    // Receive R1 response
+    // Receive R1 response.
     ret = sd_read_response(dev, SD_R1, &response);
   }
 
+  gpio_write(&dev->cs, GPIO_HIGH);
+
   if (ret >= 0) {
     // Check that only the idle state bit is set.
-    if (response.bytes[0] != 0x01) {
+    if (response.bytes[0] != R1_IDLE_STATE) {
       ret = -EAGAIN;
     }
   }
 
+  return ret;
+}
+
+static int sd_cmd8_transaction(sd_dev_s *dev) {
+  int ret;
+  sd_response_frame_s response;
+
+  gpio_write(&dev->cs, GPIO_LOW);
+
+  // Send CMD8.
+  ret = sd_write_command(dev, &commands[SD_CMD8_INDEX]);
+
+  if (ret >= 0) {
+    // Receive R7 response.
+    ret = sd_read_response(dev, SD_R7, &response);
+  }
+
   gpio_write(&dev->cs, GPIO_HIGH);
+
+  if (ret >= 0) {
+    // Check if the it is an illegal command.
+    if (response.bytes[1] & R1_ILLEGAL_COMMAND) {
+      dev->version = SD_VER_1X;
+    }
+    else {
+      dev->version = SD_VER_2X;
+    }
+
+    // Check that only the idle state bit is set, after masking the illegal command bit.
+    if ((response.bytes[0] & ~R1_ILLEGAL_COMMAND) != R1_IDLE_STATE) {
+      ret = -EAGAIN;
+    };
+  }
+
+  if (ret >= 0) {
+    // Check that the accepted voltage is correct
+    if ((response.bytes[3] & 0x0F) != 0x01) {
+      ret = -EAGAIN;
+    }
+
+    // Check that the check pattern is correct
+    else if (response.bytes[4] != 0x00) {
+      ret = -EAGAIN;
+    }
+  }
 
   return ret;
 }

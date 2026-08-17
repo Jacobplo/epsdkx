@@ -11,6 +11,13 @@
 #include <epsdkx/common/spi.h>
 #include <epsdkx/common/gpio.h>
 
+/**
+ * SD card version number
+ */
+typedef enum sd_version_e {
+  SD_VER_1X,
+  SD_VER_2X,
+} sd_version_e;
 
 /**
  * Used to store information about a specific SD card / module in user-space.
@@ -18,6 +25,7 @@
 typedef struct sd_dev_s {
   spi_channel_t channel;
   gpio_pin_u cs;
+  sd_version_e version;
 } sd_dev_s;
 
 /**
