@@ -34,6 +34,7 @@ static inline sd_command_frame_s sd_construct_command(sd_cmd_e cmd, uint32_t arg
  */
 static int sd_write_command(sd_dev_s *dev, const sd_command_frame_s *tx);
 
+static int sd_init_command_sequence(sd_dev_s *dev);
 
 int sd_init(sd_dev_s *dev, spi_channel_t channel, gpio_pin_u cs_pin) {
   int ret;
@@ -59,7 +60,7 @@ int sd_init(sd_dev_s *dev, spi_channel_t channel, gpio_pin_u cs_pin) {
     spi_set_freq(dev->channel, 2000);
 
     // Send CMD0 to reset into SPI mode.
-    sd_write_frame(dev, &commands[SD_CMD0_INDEX]);
+    sd_write_command(dev, &commands[SD_CMD0_INDEX]);
   } 
 
   return ret;
