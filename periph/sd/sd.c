@@ -296,6 +296,7 @@ static int sd_cmd8_transaction(sd_dev_s *dev) {
     // Check if the it is an illegal command.
     if (response.bytes[1] & R1_ILLEGAL_COMMAND) {
       dev->version = SD_VER_1X;
+      dev->capacity = SD_CAPACITY_STANDARD;
     }
     else {
       dev->version = SD_VER_2X;
