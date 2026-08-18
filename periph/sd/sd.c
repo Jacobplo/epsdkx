@@ -130,11 +130,11 @@ int sd_init(sd_dev_s *dev, spi_channel_t channel, gpio_pin_u cs_pin) {
     }
     spi_discardn(dev->channel, 10, TIMEOUT_MS);
 
-    // Return frequency to default 2 MHz.
-    spi_set_freq(dev->channel, 2000); 
-
     ret = sd_init_command_sequence(dev);
-  } 
+  }
+
+  // Return frequency to default 2 MHz.
+  spi_set_freq(dev->channel, 2000);
 
   return ret;
 }
