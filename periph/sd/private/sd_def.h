@@ -35,6 +35,8 @@ typedef enum sd_cmd_e {
   SD_CMD56 = CMD(56), ///< GEN_CMD
   SD_CMD58 = CMD(58), ///< READ_OCR
   SD_CMD59 = CMD(59), ///< CRC_ON_OFF
+  
+  SD_ACMD41 = CMD(41), ///< SD_SEND_OP_COND
 } sd_cmd_e;
 
 /**
@@ -86,12 +88,12 @@ typedef struct sd_response_frame_s {
  * Bit masks
  */
 
-#define R1_IDLE_STATE           0x01
-#define R1_ERASE_RESET          0x02
-#define R1_ILLEGAL_COMMAND      0x04
-#define R1_COM_CRC_ERROR        0x08
-#define R1_ERASE_SEQUENCE_ERROR 0x10
-#define R1_ADDRESS_ERROR        0x20
-#define R1_PARAMETER_ERROR      0x40
+#define R1_IDLE_STATE           (0x1 << 0)
+#define R1_ERASE_RESET          (0x1 << 1)
+#define R1_ILLEGAL_COMMAND      (0x1 << 2)
+#define R1_COM_CRC_ERROR        (0x1 << 3)
+#define R1_ERASE_SEQUENCE_ERROR (0x1 << 4)
+#define R1_ADDRESS_ERROR        (0x1 << 5)
+#define R1_PARAMETER_ERROR      (0x1 << 6)
 
 #endif

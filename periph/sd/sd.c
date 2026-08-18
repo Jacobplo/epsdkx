@@ -16,6 +16,8 @@
 typedef enum sd_command_index_e {
   SD_CMD0_INDEX,
   SD_CMD8_INDEX,
+  SD_CMD55_INDEX,
+  SD_ACMD41_INDEX,
 
   SD_COMMAND_COUNT
 } sd_command_index_e;
@@ -24,8 +26,10 @@ typedef enum sd_command_index_e {
  * Contains hard-coded command frames that are used by this driver.
  */
 static const sd_command_frame_s commands[SD_COMMAND_COUNT] = {
-  [SD_CMD0_INDEX] = STATIC_CONSTRUCT_COMMAND(SD_CMD0, 0x00, 0x4A),
-  [SD_CMD8_INDEX] = STATIC_CONSTRUCT_COMMAND(SD_CMD8, 0x100, 0x6A),
+  [SD_CMD0_INDEX]   = STATIC_CONSTRUCT_COMMAND(SD_CMD0,   0x00,  0x4A), ///< No argument, CRC required
+  [SD_CMD8_INDEX]   = STATIC_CONSTRUCT_COMMAND(SD_CMD8,   0x100, 0x6A), ///< Voltage range and check pattern, CRC required
+  [SD_CMD55_INDEX]  = STATIC_CONSTRUCT_COMMAND(SD_CMD55,  0x00,  0x00), ///< No argument, no CRC
+  [SD_ACMD41_INDEX] = STATIC_CONSTRUCT_COMMAND(SD_ACMD41, 0x00,  0x00), ///< No host high capacity support, no CRC
 };
 
 /**
@@ -78,6 +82,23 @@ static int sd_cmd0_transaction(sd_dev_s *dev);
  * Returns -EAGAIN if there is an unexpected response.
  */
 static int sd_cmd8_transaction(sd_dev_s *dev);
+
+/**
+ * Handles a full CMD55 SPI transaction.
+ *
+ * Returns -ETIMEDOUT if the transaction times out.
+ * Returns -EAGAIN if there is an unexpected response.
+ */
+static int sd_cmd55_transaction(sd_dev_s *dev);
+
+/**
+ * Handles a full ACMD41 SPI transaction, including the CMD55 call.
+ * Loops until the idle state bit is 0.
+ *
+ * Returns -ETIMEDOUT if the transaction times out.
+ * Returns -EAGAIN if there is an unexpected response.
+ */
+static int sd_acmd41_transaction(sd_dev_s *dev);
 
 int sd_init(sd_dev_s *dev, spi_channel_t channel, gpio_pin_u cs_pin) {
   int ret;
@@ -206,6 +227,16 @@ static int sd_init_command_sequence(sd_dev_s *dev) {
     ret = sd_cmd8_transaction(dev);
   }
 
+  if (ret >= 0) {
+    sd_acmd41_transaction(dev);
+  }
+
+  if (ret >= 0) {
+    if (dev->version == SD_VER_2X) {
+
+    }
+  }
+
   return ret;
 }
 
@@ -277,6 +308,68 @@ static int sd_cmd8_transaction(sd_dev_s *dev) {
       ret = -EAGAIN;
     }
   }
+
+  return ret;
+}
+
+static int sd_cmd55_transaction(sd_dev_s *dev) {
+  int ret;
+  sd_response_frame_s response;
+
+  gpio_write(&dev->cs, GPIO_LOW);
+
+  // Send CMD55.
+  ret = sd_write_command(dev, &commands[SD_CMD55_INDEX]);
+
+  if (ret >= 0) {
+    // Receive R1 response.
+    ret = sd_read_response(dev, SD_R1, &response);
+  }
+
+  gpio_write(&dev->cs, GPIO_HIGH);
+
+  if (ret >= 0) {
+    // Check that only the idle state bit is set.
+    if (response.bytes[0] != R1_IDLE_STATE) {
+      ret = -EAGAIN;
+    }
+  }
+
+  return ret;
+}
+
+static int sd_acmd41_transaction(sd_dev_s *dev) {
+  int ret;
+  sd_response_frame_s response; 
+
+  // Loop until the card is initialized.
+  do {
+    // Send CMD55 transaction.
+    ret = sd_cmd55_transaction(dev);
+
+    gpio_write(&dev->cs, GPIO_LOW);
+
+    if (ret >= 0) {
+      // Send ACMD41.
+      ret = sd_write_command(dev, &commands[SD_ACMD41_INDEX]);
+    }
+
+    if (ret >= 0) {
+      // Receive R1 response.
+      ret = sd_read_response(dev, SD_R1, &response);
+    }
+
+    gpio_write(&dev->cs, GPIO_HIGH);
+
+    if (ret >= 0) {
+      // Check for errors.
+      if ((response.bytes[0] & ~R1_IDLE_STATE) != 0x00) {
+        ret = -EAGAIN;
+      }
+    }
+
+    if (ret < 0) break;
+  } while (response.bytes[0] & R1_IDLE_STATE);
 
   return ret;
 }
