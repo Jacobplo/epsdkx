@@ -413,7 +413,7 @@ static int sd_cmd58_transaction(sd_dev_s *dev) {
       dev->capacity = SD_CAPACITY_HIGH;
     }
     else {
-      dev->capacity = SD_CAPACITY_STANDARD
+      dev->capacity = SD_CAPACITY_STANDARD;
     }
   }
 
