@@ -18,6 +18,7 @@ typedef enum sd_command_index_e {
   SD_CMD8_INDEX,
   SD_CMD55_INDEX,
   SD_ACMD41_INDEX,
+  SD_CMD58_INDEX,
 
   SD_COMMAND_COUNT
 } sd_command_index_e;
@@ -30,6 +31,7 @@ static const sd_command_frame_s commands[SD_COMMAND_COUNT] = {
   [SD_CMD8_INDEX]   = STATIC_CONSTRUCT_COMMAND(SD_CMD8,   0x100, 0x6A), ///< Voltage range and check pattern, CRC required
   [SD_CMD55_INDEX]  = STATIC_CONSTRUCT_COMMAND(SD_CMD55,  0x00,  0x00), ///< No argument, no CRC
   [SD_ACMD41_INDEX] = STATIC_CONSTRUCT_COMMAND(SD_ACMD41, 0x00,  0x00), ///< No host high capacity support, no CRC
+  [SD_CMD58_INDEX]  = STATIC_CONSTRUCT_COMMAND(SD_CMD58,  0x00,  0x00), ///< No argument, no CRC
 };
 
 /**
@@ -99,6 +101,14 @@ static int sd_cmd55_transaction(sd_dev_s *dev);
  * Returns -EAGAIN if there is an unexpected response.
  */
 static int sd_acmd41_transaction(sd_dev_s *dev);
+
+/**
+ * Handles a full CMD58 SPI transaction.
+ *
+ * Returns -ETIMEDOUT if the transaction times out.
+ * Returns -EAGAIN if there is an unexpected response.
+ */
+static int sd_cmd58_transaction(sd_dev_s *dev);
 
 int sd_init(sd_dev_s *dev, spi_channel_t channel, gpio_pin_u cs_pin) {
   int ret;
@@ -228,12 +238,12 @@ static int sd_init_command_sequence(sd_dev_s *dev) {
   }
 
   if (ret >= 0) {
-    sd_acmd41_transaction(dev);
+    ret = sd_acmd41_transaction(dev);
   }
 
   if (ret >= 0) {
     if (dev->version == SD_VER_2X) {
-
+      ret = sd_cmd58_transaction(dev);
     }
   }
 
@@ -370,6 +380,42 @@ static int sd_acmd41_transaction(sd_dev_s *dev) {
 
     if (ret < 0) break;
   } while (response.bytes[0] & R1_IDLE_STATE);
+
+  return ret;
+}
+
+static int sd_cmd58_transaction(sd_dev_s *dev) {
+  int ret;
+  sd_response_frame_s response;
+
+  gpio_write(&dev->cs, GPIO_LOW);
+
+  // Send CMD58.
+  ret = sd_write_command(dev, &commands[SD_CMD58_INDEX]);
+
+  if (ret >= 0) {
+    // Receive R3 response.
+    ret = sd_read_response(dev, SD_R3, &response);
+  }
+
+  gpio_write(&dev->cs, GPIO_HIGH);
+
+  if (ret >= 0) {
+    // Check for errors.
+    if (response.bytes[0] != 0x00) {
+      ret = -EAGAIN;
+    }
+  }
+
+  if (ret >= 0) {
+    // Set capacity class.
+    if (response.bytes[1] & OCR_CCS) {
+      dev->capacity = SD_CAPACITY_HIGH;
+    }
+    else {
+      dev->capacity = SD_CAPACITY_STANDARD
+    }
+  }
 
   return ret;
 }

@@ -96,4 +96,6 @@ typedef struct sd_response_frame_s {
 #define R1_ADDRESS_ERROR        (0x1 << 5)
 #define R1_PARAMETER_ERROR      (0x1 << 6)
 
+#define OCR_CCS                 (0x1 << 6)
+
 #endif

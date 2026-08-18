@@ -20,12 +20,21 @@ typedef enum sd_version_e {
 } sd_version_e;
 
 /**
+* SD card capacity class
+*/
+typedef enum sd_capacity_e {
+  SD_CAPACITY_STANDARD,
+  SD_CAPACITY_HIGH,
+} sd_capacity_e;
+
+/**
  * Used to store information about a specific SD card / module in user-space.
  */
 typedef struct sd_dev_s {
   spi_channel_t channel;
   gpio_pin_u cs;
   sd_version_e version;
+  sd_capacity_e capacity;
 } sd_dev_s;
 
 /**
