@@ -27,11 +27,11 @@ typedef enum sd_command_index_e {
  * Contains hard-coded command frames that are used by this driver.
  */
 static const sd_command_frame_s commands[SD_COMMAND_COUNT] = {
-  [SD_CMD0_INDEX]   = STATIC_CONSTRUCT_COMMAND(SD_CMD0,   0x00,  0x4A), ///< No argument, CRC required
-  [SD_CMD8_INDEX]   = STATIC_CONSTRUCT_COMMAND(SD_CMD8,   0x100, 0x6A), ///< Voltage range and check pattern, CRC required
-  [SD_CMD55_INDEX]  = STATIC_CONSTRUCT_COMMAND(SD_CMD55,  0x00,  0x00), ///< No argument, no CRC
-  [SD_ACMD41_INDEX] = STATIC_CONSTRUCT_COMMAND(SD_ACMD41, 0x00,  0x00), ///< No host high capacity support, no CRC
-  [SD_CMD58_INDEX]  = STATIC_CONSTRUCT_COMMAND(SD_CMD58,  0x00,  0x00), ///< No argument, no CRC
+  [SD_CMD0_INDEX]   = STATIC_CONSTRUCT_COMMAND(SD_CMD0,   0x00,  0x4A),      ///< No argument, CRC required
+  [SD_CMD8_INDEX]   = STATIC_CONSTRUCT_COMMAND(SD_CMD8,   0x100, 0x6A),      ///< Voltage range and check pattern, CRC required
+  [SD_CMD55_INDEX]  = STATIC_CONSTRUCT_COMMAND(SD_CMD55,  0x00,  0x00),      ///< No argument, no CRC
+  [SD_ACMD41_INDEX] = STATIC_CONSTRUCT_COMMAND(SD_ACMD41, 0x1 << 30,  0x00), ///< Host high capacity support, no CRC
+  [SD_CMD58_INDEX]  = STATIC_CONSTRUCT_COMMAND(SD_CMD58,  0x00,  0x00),      ///< No argument, no CRC
 };
 
 /**
