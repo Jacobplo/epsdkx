@@ -561,6 +561,11 @@ static int sd_cmd9_transaction(sd_dev_s *dev) {
       ret = sd_readn_raw(dev, discard, 1);
 
       if (ret < 0) break;
+
+      // Check for error token.
+      if (~discard[0] & 0xE0) {
+        ret = -EAGAIN;
+      }
     } while (discard[0] != TOKEN_CMD17_18_24);
   }
 
