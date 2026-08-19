@@ -185,7 +185,7 @@ int sd_init(sd_dev_s *dev, spi_channel_t channel, gpio_pin_u cs_pin) {
 }
 
 int sd_read_block(sd_dev_s *dev, uint32_t sector, uint8_t *buf) {
-  if (sector > dev->prop.sector_count) return -EINVAL;
+  if (sector >= dev->prop.sector_count) return -EINVAL;
 
   int ret;
  
