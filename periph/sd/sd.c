@@ -85,6 +85,11 @@ static int sd_read_response(sd_dev_s *dev, sd_r_e type, sd_response_frame_s *rx)
 static int sd_read_data_token(sd_dev_s *dev, uint8_t token);
 
 /**
+ * Returns the proper sector address arugment based on SD capacity class.
+ */
+static uint32_t sd_get_sector_addr(sd_dev_s *dev, uint32_t sector);
+
+/**
  * Send all initialization commands to the SD card.
  */
 static int sd_init_command_sequence(sd_dev_s *dev);
@@ -189,18 +194,7 @@ int sd_read_block(sd_dev_s *dev, uint32_t sector, uint8_t *buf) {
 
   int ret;
  
-  uint32_t addr;
-
-  // Set sector address
-  switch (dev->capacity_class) {
-    case SD_CAPACITY_STANDARD:
-      addr = sector * dev->prop.sector_size;
-      break;
-    default:
-    case SD_CAPACITY_HIGH:
-      addr = sector;
-      break;
-  }
+  uint32_t addr = sd_get_sector_addr(dev, sector);
 
   sd_command_frame_s cmd = sd_construct_command(SD_CMD17, addr);
   sd_response_frame_s response;
@@ -208,7 +202,7 @@ int sd_read_block(sd_dev_s *dev, uint32_t sector, uint8_t *buf) {
 
   gpio_write(&dev->cs, GPIO_LOW);
 
-  // Send CMD9 to read one block.
+  // Send CMD17 to read one block.
   ret = sd_write_command(dev, &cmd);
 
   if (ret >= 0) {
@@ -252,12 +246,76 @@ int sd_write_block(sd_dev_s *dev, uint32_t sector, const uint8_t *buf) {
 }
 
 int sd_readn_block(sd_dev_s *dev, uint32_t sector, uint8_t *buf, size_t n) {
-  (void)dev;
-  (void)sector;
-  (void)buf;
-  (void)n;
+  if (sector >= dev->prop.sector_count) return -EINVAL;
 
-  return -EPERM;
+  int ret;
+ 
+  uint32_t addr = sd_get_sector_addr(dev, sector);
+
+  sd_command_frame_s cmd18 = sd_construct_command(SD_CMD18, addr);
+  sd_command_frame_s cmd12 = sd_construct_command(SD_CMD12, 0x00);
+  sd_response_frame_s response;
+  uint8_t discard[2];
+
+  gpio_write(&dev->cs, GPIO_LOW);
+
+  // Send CMD18 to read multiple blocks.
+  ret = sd_write_command(dev, &cmd18);
+
+  if (ret >= 0) {
+    // Receive R1 response.
+    ret = sd_read_response(dev, SD_R1, &response);
+  }
+
+  if (ret >= 0) {
+    // Check for response errors.
+    if (response.bytes[0] != 0x00) {
+      ret = -EAGAIN;
+    }
+  }
+
+  if (ret >= 0) {
+    // Receive n blocks.
+    for (size_t i = 0; i < (n * dev->prop.sector_size); i += 512) {
+      // Receive data token.
+      ret = sd_read_data_token(dev, TOKEN_CMD17_18_24);
+      if (ret < 0) break;
+
+      // Receieve data block.
+      ret = sd_readn_raw(dev, &buf[i], dev->prop.sector_size);
+      if (ret < 0) break;
+
+      // Receive and discard CRC
+      ret = sd_readn_raw(dev, discard, 2);
+      if (ret < 0) break;
+    }
+  }
+
+  if (ret >= 0) {
+    // Send CMD12 to stop the transmission.
+    ret = sd_write_command(dev, &cmd12);
+  }
+
+  if (ret >= 0) {
+    // Discard stuff byte.
+    ret = sd_readn_raw(dev, discard, 1);
+  }
+
+  if (ret >= 0) {
+    // Receive R1B response.
+    ret = sd_read_response(dev, SD_R1B, &response);
+  }
+
+  if (ret >= 0) {
+    // Check for response errors.
+    if (response.bytes[0] != 0x00) {
+      ret = -EAGAIN;
+    }
+  }
+
+  gpio_write(&dev->cs, GPIO_HIGH);
+
+  return ret;
 }
 
 int sd_writen_block(sd_dev_s *dev, uint32_t sector, const uint8_t *buf, size_t n) {
@@ -684,4 +742,20 @@ static uint32_t sd_pow(uint8_t base, uint16_t power) {
   }
 
   return ret;
+}
+
+static uint32_t sd_get_sector_addr(sd_dev_s *dev, uint32_t sector) {
+  uint32_t addr;
+
+  switch (dev->capacity_class) {
+    case SD_CAPACITY_STANDARD:
+      addr = sector * dev->prop.sector_size;
+      break;
+    default:
+    case SD_CAPACITY_HIGH:
+      addr = sector;
+      break;
+  }
+
+  return addr;
 }
