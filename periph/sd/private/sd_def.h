@@ -100,7 +100,7 @@ typedef struct sd_response_frame_s {
 
 #define TOKEN_CMD17_18_24         0xFE
 #define TOKEN_CMD25               0xFC
-#define TOKEN_CMD_STOP_TRAN       0xFD
+#define TOKEN_STOP_TRAN           0xFD
 
 #define TOKEN_ERR_ERROR           (0x1 << 0)
 #define TOKEN_ERR_CC_ERROR        (0x1 << 1)

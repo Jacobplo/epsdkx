@@ -376,12 +376,74 @@ int sd_readn_block(sd_dev_s *dev, uint32_t sector, uint8_t *buf, size_t n) {
 }
 
 int sd_writen_block(sd_dev_s *dev, uint32_t sector, const uint8_t *buf, size_t n) {
-  (void)dev;
-  (void)sector;
-  (void)buf;
-  (void)n;
+  if (sector >= dev->prop.sector_count) return -EINVAL;
 
-  return -EPERM;
+  int ret;
+
+  uint32_t addr = sd_get_sector_addr(dev, sector);
+
+  sd_command_frame_s cmd = sd_construct_command(SD_CMD25, addr);
+  sd_response_frame_s response;
+  uint8_t discard[2];
+  const uint8_t token = TOKEN_CMD25;
+  const uint8_t stop_token = TOKEN_STOP_TRAN;
+
+  gpio_write(&dev->cs, GPIO_LOW);
+
+  // Send CMD25 to write one block.
+  ret = sd_write_command(dev, &cmd);
+
+  if (ret >= 0) {
+    // Receive R1 response.
+    ret = sd_read_response(dev, SD_R1, &response);
+  }
+
+  if (ret >= 0) {
+    // Check for response errors.
+    if (response.bytes[0] != 0x00) {
+      ret = -EAGAIN;
+    }
+  }
+
+  if (ret >= 0) {
+    // Send stuff byte.
+    ret = sd_readn_raw(dev, discard, 1);
+  }
+
+  if (ret >= 0) {
+    for (size_t i = 0; i < (n * dev->prop.sector_size); i += 512) {
+      // Send data token.
+      ret = sd_writen_raw(dev, &token, 1);
+      if (ret < 0) break;
+
+      // Send data block.
+      ret = sd_writen_raw(dev, &buf[i], dev->prop.sector_size);
+      if (ret < 0) break;
+
+      // Send stuff CRC.
+      ret = sd_readn_raw(dev, discard, 2);
+      if (ret < 0) break;
+
+      // Receive data response.
+      ret = sd_read_data_response(dev);
+      if (ret < 0) break;
+    }
+  }
+
+  if (ret >= 0) {
+    // Send stop transmission token.
+    ret = sd_writen_raw(dev, &stop_token, 1);
+  }
+
+  if (ret >= 0) {
+    // A data response read is behaviourally the same as the busy flag after a
+    // stop transmission token.
+    sd_read_data_response(dev);
+  }
+
+  gpio_write(&dev->cs, GPIO_HIGH);
+
+  return ret;
 }
 
 static inline sd_command_frame_s sd_construct_command(sd_cmd_e cmd, uint32_t arg) {
