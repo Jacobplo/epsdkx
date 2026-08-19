@@ -6,9 +6,19 @@
 #include <epsdkx/drivers/gpio.h>
 #include <epsdkx/common/gpio.h>
 #include <epsdkx/drivers/time.h>
+#include <epsdkx/generated/config.h>
 
 #include <stdint.h>
 #include <errno.h>
+
+
+#if !defined (CONFIG_SPI)
+#error CONFIG_SPI must be enabled to use the SD driver
+#endif
+
+#if CONFIG_RX_BUFFER_SIZE < 528
+#error CONFIG_RX_BUFFER_SIZE must be at least 528 to use the SD driver
+#endif
 
 
 #define TIMEOUT_MS 1000
