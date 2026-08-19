@@ -19,6 +19,7 @@ typedef enum sd_command_index_e {
   SD_CMD55_INDEX,
   SD_ACMD41_INDEX,
   SD_CMD58_INDEX,
+  SD_CMD16_INDEX,
 
   SD_COMMAND_COUNT
 } sd_command_index_e;
@@ -32,6 +33,7 @@ static const sd_command_frame_s commands[SD_COMMAND_COUNT] = {
   [SD_CMD55_INDEX]  = STATIC_CONSTRUCT_COMMAND(SD_CMD55,  0x00,  0x00),      ///< No argument, no CRC
   [SD_ACMD41_INDEX] = STATIC_CONSTRUCT_COMMAND(SD_ACMD41, 0x1 << 30,  0x00), ///< Host high capacity support, no CRC
   [SD_CMD58_INDEX]  = STATIC_CONSTRUCT_COMMAND(SD_CMD58,  0x00,  0x00),      ///< No argument, no CRC
+  [SD_CMD16_INDEX]  = STATIC_CONSTRUCT_COMMAND(SD_CMD16,  512, 0x00),        ///< Set BLOCKLEN to 512, no CRC
 };
 
 /**
@@ -109,6 +111,15 @@ static int sd_acmd41_transaction(sd_dev_s *dev);
  * Returns -EAGAIN if there is an unexpected response.
  */
 static int sd_cmd58_transaction(sd_dev_s *dev);
+
+/**
+ * Handles a full CMD16 SPI transaction.
+ * Sets block length to 512 bytes.
+ *
+ * Returns -ETIMEDOUT if the transaction times out.
+ * Returns -EAGAIN if there is an unexpected response.
+ */
+static int sd_cmd16_transaction(sd_dev_s *dev);
 
 int sd_init(sd_dev_s *dev, spi_channel_t channel, gpio_pin_u cs_pin) {
   int ret;
@@ -231,20 +242,29 @@ static int sd_read_response(sd_dev_s *dev, sd_r_e type, sd_response_frame_s *rx)
 static int sd_init_command_sequence(sd_dev_s *dev) {
   int ret;
 
+  // Restart card in SPI mode.
   ret = sd_cmd0_transaction(dev);
 
   if (ret >= 0) {
+    // Detect card version, and confirm voltage range is acceptable for version 2.0+ cards.
     ret = sd_cmd8_transaction(dev);
   }
 
   if (ret >= 0) {
+    // Initialize the card.
     ret = sd_acmd41_transaction(dev);
   }
 
   if (ret >= 0) {
     if (dev->version == SD_VER_2X) {
+      // Get card capacity class.
       ret = sd_cmd58_transaction(dev);
     }
+  }
+
+  if (ret >= 0) {
+    // Set block length to 512.
+    ret = sd_cmd16_transaction(dev);
   }
 
   return ret;
@@ -415,6 +435,30 @@ static int sd_cmd58_transaction(sd_dev_s *dev) {
     }
     else {
       dev->capacity = SD_CAPACITY_STANDARD;
+    }
+  }
+
+  return ret;
+}
+
+static int sd_cmd16_transaction(sd_dev_s *dev) {
+  int ret;
+  sd_response_frame_s response;
+
+  gpio_write(&dev->cs, GPIO_LOW);
+
+  ret = sd_write_command(dev, &commands[SD_CMD16_INDEX]);
+
+  if (ret >= 0) {
+    ret = sd_read_response(dev, SD_R1, &response);
+  }
+
+  gpio_write(&dev->cs, GPIO_LOW);
+
+  if (ret >= 0) {
+    // Check for errors.
+    if (response.bytes[0] != 0x00) {
+      ret = -EAGAIN;
     }
   }
 
