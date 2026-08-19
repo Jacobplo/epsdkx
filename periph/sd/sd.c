@@ -10,7 +10,6 @@
 
 #include <stdint.h>
 #include <errno.h>
-#include <math.h>
 
 
 #if !defined (CONFIG_SPI)
@@ -143,6 +142,12 @@ static int sd_cmd16_transaction(sd_dev_s *dev);
  * Returns -EAGAIN if there is an unexpected response.
  */
 static int sd_cmd9_transaction(sd_dev_s *dev);
+
+/**
+ * Simple integer power function used to calculate some of the SD card
+ * properties.
+ */
+static uint32_t sd_pow(uint8_t base, uint16_t power);
 
 int sd_init(sd_dev_s *dev, spi_channel_t channel, gpio_pin_u cs_pin) {
   int ret;
@@ -579,9 +584,10 @@ static int sd_cmd9_transaction(sd_dev_s *dev) {
         dev->csd.sector_size = ((buf[10] & 0x3F) << 1) | ((buf[11] & 0x80) >> 7);
 
         dev->prop.capacity_bytes = (dev->csd.c_size + 1) *
-                                   pow(2, dev->csd.c_size_mult + 2) *
-                                   pow(2, dev->csd.read_bl_len);
+                                   sd_pow(2, dev->csd.c_size_mult + 2) *
+                                   sd_pow(2, dev->csd.read_bl_len);
         dev->prop.sector_count = dev->prop.capacity_bytes / dev->prop.sector_size;
+        dev->prop.erase_sector_size = dev->csd.sector_size + 1;
         break;
 
       case SD_CAPACITY_HIGH:
@@ -592,6 +598,16 @@ static int sd_cmd9_transaction(sd_dev_s *dev) {
   }
 
   gpio_write(&dev->cs, GPIO_LOW);
+
+  return ret;
+}
+
+static uint32_t sd_pow(uint8_t base, uint16_t power) {
+  uint32_t ret = 1;
+
+  for (int i = 0; i < power; i++) {
+    ret *= base;
+  }
 
   return ret;
 }

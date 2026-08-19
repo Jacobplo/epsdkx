@@ -51,6 +51,7 @@ typedef struct sd_dev_s {
   struct {
     uint64_t capacity_bytes; 
     uint16_t sector_size;
+    uint8_t erase_sector_size;
     uint32_t sector_count;
   } prop;
 } sd_dev_s;
