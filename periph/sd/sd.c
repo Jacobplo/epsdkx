@@ -85,6 +85,12 @@ static int sd_read_response(sd_dev_s *dev, sd_r_e type, sd_response_frame_s *rx)
 static int sd_read_data_token(sd_dev_s *dev, uint8_t token);
 
 /**
+ * Receives a data response and checks it for errors.
+ * Waits until the busy signal is lifted before returning.
+ */
+static int sd_read_data_response(sd_dev_s *dev);
+
+/**
  * Returns the proper sector address arugment based on SD capacity class.
  */
 static uint32_t sd_get_sector_addr(sd_dev_s *dev, uint32_t sector);
@@ -238,11 +244,62 @@ int sd_read_block(sd_dev_s *dev, uint32_t sector, uint8_t *buf) {
 }
 
 int sd_write_block(sd_dev_s *dev, uint32_t sector, const uint8_t *buf) {
-  (void)dev;
-  (void)sector;
-  (void)buf;
+  if (sector >= dev->prop.sector_count) return -EINVAL;
 
-  return -EPERM;
+  int ret;
+ 
+  uint32_t addr = sd_get_sector_addr(dev, sector);
+
+  sd_command_frame_s cmd = sd_construct_command(SD_CMD24, addr);
+  sd_response_frame_s response;
+  uint8_t discard[2];
+  const uint8_t token = TOKEN_CMD17_18_24;
+
+  gpio_write(&dev->cs, GPIO_LOW);
+
+  // Send CMD24 to write one block.
+  ret = sd_write_command(dev, &cmd);
+
+  if (ret >= 0) {
+    // Receive R1 response.
+    ret = sd_read_response(dev, SD_R1, &response);
+  }
+
+  if (ret >= 0) {
+    // Check for response errors.
+    if (response.bytes[0] != 0x00) {
+      ret = -EAGAIN;
+    }
+  }
+
+  if (ret >= 0) {
+    // Send stuff byte.
+    ret = sd_readn_raw(dev, discard, 1);
+  }
+
+  if (ret >= 0) {
+    // Send data token.
+    ret = sd_writen_raw(dev, &token, 1);
+  }
+
+  if (ret >= 0) {
+    // Send data block.
+    ret = sd_writen_raw(dev, buf, dev->prop.sector_size);
+  }
+
+  if (ret >= 0) {
+    // Send stuff CRC.
+    ret = sd_readn_raw(dev, discard, 2);
+  }
+
+  if (ret >= 0) {
+    // Receive data response.
+    ret = sd_read_data_response(dev);
+  }
+
+  gpio_write(&dev->cs, GPIO_HIGH);
+
+  return ret;
 }
 
 int sd_readn_block(sd_dev_s *dev, uint32_t sector, uint8_t *buf, size_t n) {
@@ -431,6 +488,36 @@ static int sd_read_data_token(sd_dev_s *dev, uint8_t token) {
       ret = -EAGAIN;
     }
   } while (discard != token);
+
+  return ret;
+}
+
+static int sd_read_data_response(sd_dev_s *dev) {
+  int ret;
+  uint8_t discard;
+
+  uint8_t response;
+
+  // Receive data response
+  ret = sd_readn_raw(dev, &response, 1); 
+
+  if (ret >= 0) {
+    // Wait until the busy signal finishes.
+    do {
+      ret = sd_readn_raw(dev, &discard, 1);
+
+      if (ret < 0) {
+        break;
+      }
+    } while (discard == 0x00);
+  }
+
+  if (ret >= 0) {
+    // Check for a data response error.
+    if ((response & DATA_RESPONSE) != DATA_RESPONSE_ACCEPTED) {
+      ret = -EAGAIN;
+    }
+  }
 
   return ret;
 }

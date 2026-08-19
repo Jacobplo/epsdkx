@@ -88,24 +88,29 @@ typedef struct sd_response_frame_s {
  * Bit masks
  */
 
-#define R1_IDLE_STATE           (0x1 << 0)
-#define R1_ERASE_RESET          (0x1 << 1)
-#define R1_ILLEGAL_COMMAND      (0x1 << 2)
-#define R1_COM_CRC_ERROR        (0x1 << 3)
-#define R1_ERASE_SEQUENCE_ERROR (0x1 << 4)
-#define R1_ADDRESS_ERROR        (0x1 << 5)
-#define R1_PARAMETER_ERROR      (0x1 << 6)
+#define R1_IDLE_STATE             (0x1 << 0)
+#define R1_ERASE_RESET            (0x1 << 1)
+#define R1_ILLEGAL_COMMAND        (0x1 << 2)
+#define R1_COM_CRC_ERROR          (0x1 << 3)
+#define R1_ERASE_SEQUENCE_ERROR   (0x1 << 4)
+#define R1_ADDRESS_ERROR          (0x1 << 5)
+#define R1_PARAMETER_ERROR        (0x1 << 6)
 
-#define OCR_CCS                 (0x1 << 6)
+#define OCR_CCS                   (0x1 << 6)
 
-#define TOKEN_CMD17_18_24       0xFE
-#define TOKEN_CMD25             0xFC
-#define TOKEN_CMD_STOP_TRAN     0xFD
+#define TOKEN_CMD17_18_24         0xFE
+#define TOKEN_CMD25               0xFC
+#define TOKEN_CMD_STOP_TRAN       0xFD
 
-#define TOKEN_ERR_ERROR         (0x1 << 0)
-#define TOKEN_ERR_CC_ERROR      (0x1 << 1)
-#define TOKEN_ERR_ECC_FAILED    (0x1 << 2)
-#define TOKEN_ERR_OUT_OF_RANGE  (0x1 << 3)
-#define TOKEN_ERR_LOCKED        (0x1 << 4)
+#define TOKEN_ERR_ERROR           (0x1 << 0)
+#define TOKEN_ERR_CC_ERROR        (0x1 << 1)
+#define TOKEN_ERR_ECC_FAILED      (0x1 << 2)
+#define TOKEN_ERR_OUT_OF_RANGE    (0x1 << 3)
+#define TOKEN_ERR_LOCKED          (0x1 << 4)
+
+#define DATA_RESPONSE             0x1F
+#define DATA_RESPONSE_ACCEPTED    0x05
+#define DATA_RESPONSE_CRC_ERROR   0x0B
+#define DATA_RESPONSE_WRITE_ERROR 0x0D
 
 #endif
