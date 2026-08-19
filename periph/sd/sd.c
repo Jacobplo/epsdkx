@@ -10,6 +10,7 @@
 
 #include <stdint.h>
 #include <errno.h>
+#include <math.h>
 
 
 #if !defined (CONFIG_SPI)
@@ -30,6 +31,7 @@ typedef enum sd_command_index_e {
   SD_ACMD41_INDEX,
   SD_CMD58_INDEX,
   SD_CMD16_INDEX,
+  SD_CMD9_INDEX,
 
   SD_COMMAND_COUNT
 } sd_command_index_e;
@@ -38,12 +40,13 @@ typedef enum sd_command_index_e {
  * Contains hard-coded command frames that are used by this driver.
  */
 static const sd_command_frame_s commands[SD_COMMAND_COUNT] = {
-  [SD_CMD0_INDEX]   = STATIC_CONSTRUCT_COMMAND(SD_CMD0,   0x00,  0x4A),      ///< No argument, CRC required
-  [SD_CMD8_INDEX]   = STATIC_CONSTRUCT_COMMAND(SD_CMD8,   0x100, 0x6A),      ///< Voltage range and check pattern, CRC required
-  [SD_CMD55_INDEX]  = STATIC_CONSTRUCT_COMMAND(SD_CMD55,  0x00,  0x00),      ///< No argument, no CRC
-  [SD_ACMD41_INDEX] = STATIC_CONSTRUCT_COMMAND(SD_ACMD41, 0x1 << 30,  0x00), ///< Host high capacity support, no CRC
-  [SD_CMD58_INDEX]  = STATIC_CONSTRUCT_COMMAND(SD_CMD58,  0x00,  0x00),      ///< No argument, no CRC
-  [SD_CMD16_INDEX]  = STATIC_CONSTRUCT_COMMAND(SD_CMD16,  512, 0x00),        ///< Set BLOCKLEN to 512, no CRC
+  [SD_CMD0_INDEX]   = STATIC_CONSTRUCT_COMMAND(SD_CMD0,   0x00,      0x4A), ///< No argument, CRC required
+  [SD_CMD8_INDEX]   = STATIC_CONSTRUCT_COMMAND(SD_CMD8,   0x100,     0x6A), ///< Voltage range and check pattern, CRC required
+  [SD_CMD55_INDEX]  = STATIC_CONSTRUCT_COMMAND(SD_CMD55,  0x00,      0x00), ///< No argument, no CRC
+  [SD_ACMD41_INDEX] = STATIC_CONSTRUCT_COMMAND(SD_ACMD41, 0x1 << 30, 0x00), ///< Host high capacity support, no CRC
+  [SD_CMD58_INDEX]  = STATIC_CONSTRUCT_COMMAND(SD_CMD58,  0x00,      0x00), ///< No argument, no CRC
+  [SD_CMD16_INDEX]  = STATIC_CONSTRUCT_COMMAND(SD_CMD16,  512,       0x00), ///< Set BLOCKLEN to 512, no CRC
+  [SD_CMD9_INDEX]   = STATIC_CONSTRUCT_COMMAND(SD_CMD9,   0x00,      0x00), ///< No argument, no CRC
 };
 
 /**
@@ -130,6 +133,16 @@ static int sd_cmd58_transaction(sd_dev_s *dev);
  * Returns -EAGAIN if there is an unexpected response.
  */
 static int sd_cmd16_transaction(sd_dev_s *dev);
+
+/**
+ * Handles a full CMD9 SPI transaction.
+ * Unpacks necessary information from the CSD register into dev
+ * Also sets any dev->prop properties that depend on CSD register values.
+ *
+ * Returns -ETIMEDOUT if the transaction times out.
+ * Returns -EAGAIN if there is an unexpected response.
+ */
+static int sd_cmd9_transaction(sd_dev_s *dev);
 
 int sd_init(sd_dev_s *dev, spi_channel_t channel, gpio_pin_u cs_pin) {
   int ret;
@@ -309,6 +322,12 @@ static int sd_init_command_sequence(sd_dev_s *dev) {
   if (ret >= 0) {
     // Set block length to 512.
     ret = sd_cmd16_transaction(dev);
+    dev->prop.sector_size = 512;
+  }
+
+  if (ret >= 0) {
+    // Read CSD register.
+    ret = sd_cmd9_transaction(dev);
   }
 
   return ret;
@@ -360,7 +379,7 @@ static int sd_cmd8_transaction(sd_dev_s *dev) {
     // Check if the it is an illegal command.
     if (response.bytes[1] & R1_ILLEGAL_COMMAND) {
       dev->version = SD_VER_1X;
-      dev->capacity = SD_CAPACITY_STANDARD;
+      dev->capacity_class = SD_CAPACITY_STANDARD;
     }
     else {
       dev->version = SD_VER_2X;
@@ -475,10 +494,10 @@ static int sd_cmd58_transaction(sd_dev_s *dev) {
   if (ret >= 0) {
     // Set capacity class.
     if (response.bytes[1] & OCR_CCS) {
-      dev->capacity = SD_CAPACITY_HIGH;
+      dev->capacity_class = SD_CAPACITY_HIGH;
     }
     else {
-      dev->capacity = SD_CAPACITY_STANDARD;
+      dev->capacity_class = SD_CAPACITY_STANDARD;
     }
   }
 
@@ -505,6 +524,74 @@ static int sd_cmd16_transaction(sd_dev_s *dev) {
       ret = -EAGAIN;
     }
   }
+
+  return ret;
+}
+
+static int sd_cmd9_transaction(sd_dev_s *dev) {
+  int ret;
+  sd_response_frame_s response;
+
+  uint8_t buf[16];
+  uint8_t discard[2];
+
+  gpio_write(&dev->cs, GPIO_LOW);
+
+  ret = sd_write_command(dev, &commands[SD_CMD9_INDEX]);
+
+  if (ret >= 0) {
+    ret = sd_read_response(dev, SD_R1, &response);
+  }
+
+  if (ret >= 0) {
+    // Check for errors in the R1 response.
+    if (response.bytes[0] != 0x00) {
+      ret = -EAGAIN;
+    }
+  }
+
+  if (ret >= 0) {
+    // Wait until a valid data token is received.
+    do {
+      ret = sd_readn_raw(dev, discard, 1);
+
+      if (ret < 0) break;
+    } while (discard[0] != TOKEN_CMD17_18_24);
+  }
+
+  if (ret >= 0) {
+    // Read the data packet into buf.
+    ret = sd_readn_raw(dev, buf, 16);
+  }
+
+  if (ret >= 0) {
+    // Discard CRC.
+    ret = sd_readn_raw(dev, discard, 2);
+  }
+
+  if (ret >= 0) {
+    // Unpack CSD into dev.
+    switch (dev->capacity_class) {
+      case SD_CAPACITY_STANDARD:
+        dev->csd.read_bl_len = buf[5] & 0x0F;
+        dev->csd.c_size      = ((buf[6] & 0x03) << 10) | (buf[7] << 2) | (buf[8] & 0xC0 >> 6);
+        dev->csd.c_size_mult = ((buf[9] & 0x03) << 1) | ((buf[10] & 0x80) >> 7);
+        dev->csd.sector_size = ((buf[10] & 0x3F) << 1) | ((buf[11] & 0x80) >> 7);
+
+        dev->prop.capacity_bytes = (dev->csd.c_size + 1) *
+                                   pow(2, dev->csd.c_size_mult + 2) *
+                                   pow(2, dev->csd.read_bl_len);
+        dev->prop.sector_count = dev->prop.capacity_bytes / dev->prop.sector_size;
+        break;
+
+      case SD_CAPACITY_HIGH:
+        // TODO implement high capacity support
+        ret = -EPERM;
+        break;
+    }
+  }
+
+  gpio_write(&dev->cs, GPIO_LOW);
 
   return ret;
 }

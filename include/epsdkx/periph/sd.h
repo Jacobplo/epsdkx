@@ -41,7 +41,18 @@ typedef struct sd_dev_s {
   spi_channel_t channel;
   gpio_pin_u cs;
   sd_version_e version;
-  sd_capacity_e capacity;
+  sd_capacity_e capacity_class;
+  struct {
+    uint16_t read_bl_len;
+    uint16_t c_size;
+    uint8_t c_size_mult;
+    uint8_t sector_size;
+  } csd;
+  struct {
+    uint64_t capacity_bytes; 
+    uint16_t sector_size;
+    uint32_t sector_count;
+  } prop;
 } sd_dev_s;
 
 /**
