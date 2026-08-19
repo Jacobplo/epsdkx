@@ -150,6 +150,40 @@ int sd_init(sd_dev_s *dev, spi_channel_t channel, gpio_pin_u cs_pin) {
   return ret;
 }
 
+int sd_read_block(sd_dev_s *dev, uint32_t sector, uint8_t *buf) {
+  (void)dev;
+  (void)sector;
+  (void)buf;
+
+  return -EPERM;
+}
+
+int sd_write_block(sd_dev_s *dev, uint32_t sector, const uint8_t *buf) {
+  (void)dev;
+  (void)sector;
+  (void)buf;
+
+  return -EPERM;
+}
+
+int sd_readn_block(sd_dev_s *dev, uint32_t sector, uint8_t *buf, size_t n) {
+  (void)dev;
+  (void)sector;
+  (void)buf;
+  (void)n;
+
+  return -EPERM;
+}
+
+int sd_writen_block(sd_dev_s *dev, uint32_t sector, const uint8_t *buf, size_t n) {
+  (void)dev;
+  (void)sector;
+  (void)buf;
+  (void)n;
+
+  return -EPERM;
+}
+
 static inline sd_command_frame_s sd_construct_command(sd_cmd_e cmd, uint32_t arg) {
   return (sd_command_frame_s){
     .bytes = {
