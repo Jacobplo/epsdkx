@@ -79,6 +79,12 @@ static int sd_write_command(sd_dev_s *dev, const sd_command_frame_s *tx);
 static int sd_read_response(sd_dev_s *dev, sd_r_e type, sd_response_frame_s *rx);
 
 /**
+ * Repeatedly receives bytes until the desired data token is received, or until
+ * an error token is.
+ */
+static int sd_read_data_token(sd_dev_s *dev, uint8_t token);
+
+/**
  * Send all initialization commands to the SD card.
  */
 static int sd_init_command_sequence(sd_dev_s *dev);
@@ -179,11 +185,62 @@ int sd_init(sd_dev_s *dev, spi_channel_t channel, gpio_pin_u cs_pin) {
 }
 
 int sd_read_block(sd_dev_s *dev, uint32_t sector, uint8_t *buf) {
-  (void)dev;
-  (void)sector;
-  (void)buf;
+  if (sector > dev->prop.sector_count) return -EINVAL;
 
-  return -EPERM;
+  int ret;
+ 
+  uint32_t addr;
+
+  // Set sector address
+  switch (dev->capacity_class) {
+    case SD_CAPACITY_STANDARD:
+      addr = sector * dev->prop.sector_size;
+      break;
+    default:
+    case SD_CAPACITY_HIGH:
+      addr = sector;
+      break;
+  }
+
+  sd_command_frame_s cmd = sd_construct_command(SD_CMD17, addr);
+  sd_response_frame_s response;
+  uint8_t discard[2];
+
+  gpio_write(&dev->cs, GPIO_LOW);
+
+  // Send CMD9 to read one block.
+  ret = sd_write_command(dev, &cmd);
+
+  if (ret >= 0) {
+    // Receive R1 response.
+    ret = sd_read_response(dev, SD_R1, &response);
+  }
+
+  if (ret >= 0) {
+    // Check for response errors.
+    if (response.bytes[0] != 0x00) {
+      ret = -EAGAIN;
+    }
+  }
+
+  if (ret >= 0) {
+    // Receive data token.
+    ret = sd_read_data_token(dev, TOKEN_CMD17_18_24);
+  }
+
+  if (ret >= 0) {
+    // Receieve data block.
+    ret = sd_readn_raw(dev, buf, dev->prop.sector_size);
+  }
+
+  if (ret >= 0) {
+    // Receive and discard CRC
+    ret = sd_readn_raw(dev, discard, 2);
+  }
+
+  gpio_write(&dev->cs, GPIO_HIGH);
+
+  return ret;
 }
 
 int sd_write_block(sd_dev_s *dev, uint32_t sector, const uint8_t *buf) {
@@ -297,6 +354,25 @@ static int sd_read_response(sd_dev_s *dev, sd_r_e type, sd_response_frame_s *rx)
         break;
     }
   }
+
+  return ret;
+}
+
+static int sd_read_data_token(sd_dev_s *dev, uint8_t token) {
+  int ret;
+  uint8_t discard;
+
+  // Wait until a valid data token is received.
+  do {
+    ret = sd_readn_raw(dev, &discard, 1);
+
+    if (ret < 0) break;
+
+    // Check for error token.
+    if (~discard & 0xE0) {
+      ret = -EAGAIN;
+    }
+  } while (discard != token);
 
   return ret;
 }
@@ -556,17 +632,8 @@ static int sd_cmd9_transaction(sd_dev_s *dev) {
   }
 
   if (ret >= 0) {
-    // Wait until a valid data token is received.
-    do {
-      ret = sd_readn_raw(dev, discard, 1);
-
-      if (ret < 0) break;
-
-      // Check for error token.
-      if (~discard[0] & 0xE0) {
-        ret = -EAGAIN;
-      }
-    } while (discard[0] != TOKEN_CMD17_18_24);
+    // Receive data token.
+    ret = sd_read_data_token(dev, TOKEN_CMD17_18_24);
   }
 
   if (ret >= 0) {
@@ -575,9 +642,11 @@ static int sd_cmd9_transaction(sd_dev_s *dev) {
   }
 
   if (ret >= 0) {
-    // Discard CRC.
+    // Receive and discard CRC.
     ret = sd_readn_raw(dev, discard, 2);
   }
+
+  gpio_write(&dev->cs, GPIO_HIGH);
 
   if (ret >= 0) {
     // Unpack CSD into dev.
