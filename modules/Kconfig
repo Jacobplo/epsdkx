@@ -4,3 +4,6 @@ config MODULE_CMSIS_5
 
 config MODULE_CMSIS_STM32F1
   bool "Enables headers for STM32F1 targets"
+
+config MODULE_FATFS
+  bool "Enables FatFs"

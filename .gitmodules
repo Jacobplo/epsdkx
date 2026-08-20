@@ -4,3 +4,6 @@
 [submodule "modules/CMSIS_5"]
 	path = modules/CMSIS_5
 	url = https://github.com/ARM-software/CMSIS_5.git
+[submodule "modules/fatfs"]
+	path = modules/fatfs
+	url = https://github.com/Jacobplo/fatfs
