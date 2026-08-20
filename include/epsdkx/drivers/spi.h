@@ -40,6 +40,16 @@ int spi_readn_writen(spi_channel_t channel, uint8_t *tx, size_t n);
 int spi_get(spi_channel_t channel, uint8_t *rx);
 
 /**
+ * Retrieves n byte of data from the internal RX buffer into rx.
+ *
+ * Unlike spi_get(), this will wait for each byte to arrive, so a timeout is
+ * used.
+ *
+ * Returns -ETIMEOUT on timeout.
+ */
+int spi_getn(spi_channel_t channel, uint8_t *rx, size_t n, uint32_t timeout_ms);
+
+/**
  * Returns the GPIO pins used by the SPI interface.
  */
 const spi_pins_s *spi_get_pins(spi_channel_t channel);
@@ -52,5 +62,15 @@ const spi_pins_s *spi_get_pins(spi_channel_t channel);
  * Has no effect in slave mode.
  */
 int spi_set_freq(spi_channel_t channel, uint32_t freq_khz);
+
+/**
+ * Discards n bytes from the internal RX buffer for cases where data is sent,
+ * but none should be received.
+ *
+ * A timeout is used, because this will wait for each byte to arrive.
+ *
+ * Returns -ETIMEOUT on timeout.
+ */
+int spi_discardn(spi_channel_t channel, size_t n, uint32_t timeout_ms);
 
 #endif
