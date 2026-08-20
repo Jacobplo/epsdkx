@@ -1,2 +1,8 @@
 config PERIPH_SD
   bool "SD card SPI mode driver"
+
+config PERIPH_SD_FATFS
+  bool "Enable FatFs usage using the SD driver"
+
+config MODULE_FATFS
+  default y if PERIPH_SD_FATFS

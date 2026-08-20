@@ -8,5 +8,5 @@ inc-$(CONFIG_MODULE_CMSIS_STM32F1) += -I$(CMSIS_STM32F1)/Include
 
 FATFS	:= $(MODULE_DIR)/fatfs
 mod-$(CONFIG_MODULE_FATFS) += $(FATFS)/.git
-inc-$(CONFIG_MODULE_FATFS) += -I$(FATFS)
+inc-$(CONFIG_MODULE_FATFS) += -I$(FATFS)/source
 src-$(CONFIG_MODULE_FATFS) += $(wildcard $(FATFS)/source/*.c)
