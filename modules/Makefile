@@ -5,3 +5,8 @@ inc-$(CONFIG_MODULE_CMSIS_5) += -I$(CMSIS_5)/CMSIS/Core/Include
 CMSIS_STM32F1	:= $(MODULE_DIR)/cmsis-device-f1
 mod-$(CONFIG_MODULE_CMSIS_STM32F1) += $(CMSIS_STM32F1)/.git
 inc-$(CONFIG_MODULE_CMSIS_STM32F1) += -I$(CMSIS_STM32F1)/Include
+
+FATFS	:= $(MODULE_DIR)/fatfs
+mod-$(CONFIG_MODULE_FATFS) += $(FATFS)/.git
+inc-$(CONFIG_MODULE_FATFS) += -I$(FATFS)/source
+src-$(CONFIG_MODULE_FATFS) += $(wildcard $(FATFS)/source/*.c)
