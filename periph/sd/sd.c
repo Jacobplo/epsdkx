@@ -491,11 +491,19 @@ static int sd_read_response(sd_dev_s *dev, sd_r_e type, sd_response_frame_s *rx)
   int ret;
   uint8_t discard;
 
+  uint32_t start; 
+  uint32_t cur;
+
+  start = time_get_ticks();
+
   // Read the first byte of the response.
   do {
-    ret = sd_readn_raw(dev, rx->bytes, 1);
+    ret = sd_readn_raw(dev, rx->bytes, 1); 
+    if (ret < 0) break;
 
-    if (ret < 0) {
+    cur = time_get_ticks();
+    if (time_ticks_to_ms(cur - start) > TIMEOUT_MS) {
+      ret = -ETIMEDOUT;
       break;
     }
   } while (rx->bytes[0] & 0x80);
@@ -508,11 +516,15 @@ static int sd_read_response(sd_dev_s *dev, sd_r_e type, sd_response_frame_s *rx)
         break;
 
       case SD_R1B:
+        start = time_get_ticks();
         // Wait until the busy signal finishes.
         do {
           ret = sd_readn_raw(dev, &discard, 1);
+          if (ret < 0) break;
 
-          if (ret < 0) {
+          cur = time_get_ticks();
+          if (time_ticks_to_ms(cur - start) > TIMEOUT_MS) {
+            ret = -ETIMEDOUT;
             break;
           }
         } while (discard == 0x00);
@@ -539,15 +551,23 @@ static int sd_read_data_token(sd_dev_s *dev, uint8_t token) {
   int ret;
   uint8_t discard;
 
+  uint32_t start = time_get_ticks();
+
   // Wait until a valid data token is received.
   do {
     ret = sd_readn_raw(dev, &discard, 1);
-
     if (ret < 0) break;
 
     // Check for error token.
     if (~discard & 0xE0) {
       ret = -EAGAIN;
+      break;
+    }
+
+    uint32_t cur = time_get_ticks();
+    if (time_ticks_to_ms(cur - start) > TIMEOUT_MS) {
+      ret = -ETIMEDOUT;
+      break;
     }
   } while (discard != token);
 
