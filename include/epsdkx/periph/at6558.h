@@ -76,4 +76,10 @@ int at6558_init(at6558_dev_s *dev, uart_channel_t channel);
  */
 int at6558_get_gnss_datum(at6558_dev_s *dev, at6558_datum_s *datum);
 
+/**
+ * Instructs the device to enter the standby low power mode for the provided
+ * number of seconds.
+ */
+void at6558_standby(at6558_dev_s *dev, uint16_t seconds);
+
 #endif

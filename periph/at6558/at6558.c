@@ -5,8 +5,8 @@
  * also respond with ACK for success, or NACK for failure.
  *
  * The NMEA 0183 protocol can also be used to a more limited degree, but this
- * driver only uses proprietary messages over the protocol during
- * initialization.
+ * driver only uses proprietary messages that are not provided by the CASIC
+ * protocol.
  */
 
 #include <epsdkx/periph/at6558.h>
@@ -122,6 +122,11 @@ static float at6558_extract_float(const uint32_t bits);
  */
 static double at6558_extract_double(const uint64_t bits);
 
+/**
+ * Computes and returns the checksum for a NMEA protocol frame
+ */
+static uint32_t at6558_nmea_compute_checksum(const uint8_t *frame);
+
 
 int at6558_init(at6558_dev_s *dev, uart_channel_t channel) {
   int ret;
@@ -188,6 +193,20 @@ int at6558_get_gnss_datum(at6558_dev_s *dev, at6558_datum_s *datum) {
   }
 
   return ret;
+}
+
+void at6558_standby(at6558_dev_s *dev, uint16_t seconds) {
+  size_t i = 0;
+
+  i += sprintf((char *)&dev->frame[i], "$PCAS12");
+  i += sprintf((char *)&dev->frame[i], ",%d", seconds);
+  i += sprintf((char *)&dev->frame[i], "*");
+
+  const uint8_t cksum = at6558_nmea_compute_checksum(dev->frame);
+
+  i += sprintf((char *)&dev->frame[i], "%02X\r\n", cksum);
+
+  at6558_write_frame(dev, i);
 }
 
 static void at6558_read_frame(at6558_dev_s *dev, size_t n) {
@@ -343,4 +362,19 @@ static double at6558_extract_double(const uint64_t bits) {
   double ret;
   memcpy(&ret, &bits, sizeof(bits));
   return ret;
+}
+
+static uint32_t at6558_nmea_compute_checksum(const uint8_t *frame) {
+  uint8_t cksum = 0x00;
+
+  // Set first character to the character following '$'
+  const uint8_t *cur = &frame[1];
+
+  uint8_t chr;
+  while ((chr = *cur) != '*') {
+    cksum ^= chr;
+    cur++;
+  }
+
+  return cksum;
 }
