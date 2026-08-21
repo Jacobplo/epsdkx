@@ -4,5 +4,9 @@ config PERIPH_SD
 config PERIPH_SD_FATFS
   bool "Enable FatFs usage using the SD driver"
 
+config PERIPH_SD_FATFS_FFCONF
+  bool "Enable usage of the bundled default FatFs ffconf.h"
+  default y if PERIPH_SD_FATFS
+
 config MODULE_FATFS
   default y if PERIPH_SD_FATFS
